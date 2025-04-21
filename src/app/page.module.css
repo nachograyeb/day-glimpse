@@ -1,0 +1,14 @@
+/* src/app/page.module.css */
+.pageContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 1rem;
+}
+
+.mainContent {
+  width: 100%;
+  max-width: 600px;
+}

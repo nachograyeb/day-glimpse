@@ -3,6 +3,7 @@
 
 import { useEffect } from 'react';
 import { ConnectProfile } from '@/components/ConnectProfile';
+import './globals.css';
 
 export default function Home() {
   useEffect(() => {
@@ -33,10 +34,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-transparent">
-      <main className="w-full h-screen max-w-2xl p-4">
-        <ConnectProfile />
-      </main>
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <ConnectProfile />
     </div>
   );
 }

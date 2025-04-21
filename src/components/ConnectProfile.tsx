@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClientUPProvider } from '@lukso/up-provider'
 import { type Eip1193Provider, ethers } from 'ethers'
+import styles from './ConnectProfile.module.css'
 
 export const ConnectProfile = () => {
   const [chainId, setChainId] = useState<number>(0)
@@ -19,7 +20,6 @@ export const ConnectProfile = () => {
     setWalletConnected(accounts.length > 0 && contextAccounts.length > 0)
   }, [])
 
-  // Initialize providers only on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -29,7 +29,6 @@ export const ConnectProfile = () => {
         setBrowserProvider(_browserProvider)
       } catch (err) {
         console.error('Failed to create provider:', err)
-        // Don't set error here to avoid showing the error message in the UI
       }
     }
   }, [])
@@ -56,7 +55,6 @@ export const ConnectProfile = () => {
         updateConnected(_accounts, _contextAccounts, _chainId)
       } catch (error) {
         console.log(error);
-        // Don't set error here to avoid showing the error message in the UI
       }
     }
     init()
@@ -77,10 +75,9 @@ export const ConnectProfile = () => {
       updateConnected(accounts, contextAccounts, chainIdNumber)
     }
 
-    // Only add event listeners if browserProvider exists
     provider.on('accountsChanged', accountsChanged)
     provider.on('chainChanged', chainChanged)
-    // Check if provider has contextAccountsChanged event
+
     if (provider && provider.on) {
       provider.on('contextAccountsChanged', contextAccountsChanged)
     }
@@ -94,42 +91,27 @@ export const ConnectProfile = () => {
     }
   }, [browserProvider, provider, chainId, accounts, contextAccounts, updateConnected])
 
-  // Add JSX return statement
   return (
-    <div className="connect-profile w-full h-full">
+    <div className={styles.wrapper}>
       {walletConnected ? (
-        <div className="space-y-2">
-          <h2 className="text-xl font-bold">Wallet Connected</h2>
-          <p className="text-sm">Chain ID: {chainId}</p>
-          <p className="text-sm">Account: {accounts[0]}</p>
+        <div className={styles.connectedState}>
+          <h2>Wallet Connected</h2>
+          <p>Chain ID: {chainId}</p>
+          <p>Account: {accounts[0]}</p>
           {contextAccounts.length > 0 && (
-            <p className="text-sm">Context Account: {contextAccounts[0]}</p>
+            <p>Context Account: {contextAccounts[0]}</p>
           )}
         </div>
       ) : (
-        <div className="relative w-full h-full min-h-[400px] bg-gradient-to-br from-purple-900 via-fuchsia-900 to-pink-900 rounded-2xl overflow-hidden flex items-center justify-center">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute w-96 h-96 -top-48 -left-48 bg-purple-500/30 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute w-96 h-96 -bottom-48 -right-48 bg-pink-500/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.7s' }}></div>
-            <div className="absolute w-64 h-64 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-fuchsia-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-          </div>
-
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-
-          {/* Content */}
-          <div className="relative z-10 text-center p-8">
-            <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 leading-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-fuchsia-400">
-                Connect your Universal Profile
-              </span>
+        <div className={styles.waitingState}>
+          <div className={styles.animatedBackground} />
+          <div className={styles.content}>
+            <h1>
+              <span className={styles.gradientText}>Connect your Universal Profile</span>
               <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-pink-400 to-purple-400">
-                and see what's inside
-              </span>
+              <span className={styles.gradientTextReverse}>and see what's inside</span>
             </h1>
-            <div className="w-16 h-1 bg-gradient-to-r from-purple-400 via-pink-400 to-fuchsia-400 mx-auto mt-6 rounded-full animate-pulse"></div>
+            <div className={styles.divider}></div>
           </div>
         </div>
       )}
