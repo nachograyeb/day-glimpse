@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClientUPProvider } from '@lukso/up-provider'
 import { type Eip1193Provider, ethers } from 'ethers'
 import styles from './ConnectProfile.module.css'
+import { ImageUploader } from './ImageUploader';
 
 export const ConnectProfile = () => {
   const [chainId, setChainId] = useState<number>(0)
@@ -14,10 +15,26 @@ export const ConnectProfile = () => {
   const [error, setError] = useState('')
   const [provider, setProvider] = useState<any>(null)
   const [browserProvider, setBrowserProvider] = useState<ethers.BrowserProvider | null>(null)
+  const [isOwner, setIsOwner] = useState(false)
+  const [profileAddress, setProfileAddress] = useState<string | null>(null)
 
   const updateConnected = useCallback((accounts: Array<`0x${string}`>, contextAccounts: Array<`0x${string}`>, chainId: number) => {
-    console.log(accounts, chainId)
+    console.log('Accounts:', accounts, 'Context:', contextAccounts, 'Chain ID:', chainId)
     setWalletConnected(accounts.length > 0 && contextAccounts.length > 0)
+
+    // Store the profile address we're viewing (context account)
+    if (contextAccounts.length > 0) {
+      setProfileAddress(contextAccounts[0]);
+    }
+
+    // Check if the connected wallet address is the same as the context address (case insensitive)
+    if (accounts.length > 0 && contextAccounts.length > 0) {
+      const isOwner = accounts[0].toLowerCase() === contextAccounts[0].toLowerCase();
+      setIsOwner(isOwner);
+      console.log('Is owner?', isOwner);
+    } else {
+      setIsOwner(false);
+    }
   }, [])
 
   useEffect(() => {
@@ -27,6 +44,13 @@ export const ConnectProfile = () => {
         const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider)
         setProvider(_provider)
         setBrowserProvider(_browserProvider)
+
+        // Check if we have a stored parent profile address
+        const parentProfileAddress = localStorage.getItem('parentProfileAddress');
+        if (parentProfileAddress) {
+          console.log('Found stored parent profile address:', parentProfileAddress);
+        }
+
       } catch (err) {
         console.error('Failed to create provider:', err)
       }
@@ -34,9 +58,6 @@ export const ConnectProfile = () => {
   }, [])
 
   // Monitor accountsChanged and chainChained events
-  // This is how a grid widget gets its accounts and chainId.
-  // Don't call eth_requestAccounts() directly to connect,
-  // The connection will be injected by the grid parent page.
   useEffect(() => {
     if (!browserProvider || !provider) return;
 
@@ -94,13 +115,9 @@ export const ConnectProfile = () => {
   return (
     <div className={styles.wrapper}>
       {walletConnected ? (
-        <div className={styles.connectedState}>
-          <h2>Wallet Connected</h2>
-          <p>Chain ID: {chainId}</p>
-          <p>Account: {accounts[0]}</p>
-          {contextAccounts.length > 0 && (
-            <p>Context Account: {contextAccounts[0]}</p>
-          )}
+        <div className={styles.waitingState}>
+          <div className={styles.animatedBackground} />
+          <ImageUploader isOwner={isOwner} profileAddress={profileAddress} />
         </div>
       ) : (
         <div className={styles.waitingState}>
