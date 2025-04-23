@@ -73,11 +73,10 @@ export class CloudinaryImageRepository implements IImageRepository {
       const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
 
       return new Promise((resolve, reject) => {
-        cloudinary.api.resource(imageHash, (error, result) => {
+        cloudinary.api.resource(imageHash, (error) => {
           if (error) {
-            // If resource doesn't exist (404) or other Cloudinary API error
             if (error.http_code === 404) {
-              resolve(null); // Return null for non-existent images
+              resolve(null);
             } else {
               console.error('Cloudinary API error:', error);
               reject(new Error('Failed to verify image existence'));
@@ -85,13 +84,8 @@ export class CloudinaryImageRepository implements IImageRepository {
             return;
           }
 
-          // If we get here, the image exists, so generate and return the URL
           const url = cloudinary.url(imageHash, {
             secure: true,
-            transformation: [
-              { width: 300, height: 300, crop: 'fill' },
-              { quality: 'auto', fetch_format: 'auto' },
-            ],
           });
 
           resolve(url);
