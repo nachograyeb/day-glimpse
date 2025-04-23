@@ -14,10 +14,8 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create a consistent key for localStorage
   const getStorageKey = (address: string) => `profile-image-${address.toLowerCase()}`;
 
-  // Load image from storage when component mounts or profileAddress changes
   useEffect(() => {
     if (profileAddress) {
       const storageKey = getStorageKey(profileAddress);
