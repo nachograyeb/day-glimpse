@@ -1,4 +1,3 @@
-// src/components/ImageUploader.tsx
 'use client'
 
 import { useState, useRef, useEffect } from 'react';
@@ -12,15 +11,23 @@ interface ImageUploaderProps {
 export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) => {
   const [image, setImage] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Create a consistent key for localStorage
+  const getStorageKey = (address: string) => `profile-image-${address.toLowerCase()}`;
 
   // Load image from storage when component mounts or profileAddress changes
   useEffect(() => {
     if (profileAddress) {
-      const storedImage = localStorage.getItem(`profile-image-${profileAddress.toLowerCase()}`);
+      const storageKey = getStorageKey(profileAddress);
+      const storedImage = localStorage.getItem(storageKey);
+
       if (storedImage) {
+        console.log(`Found image for ${profileAddress} in localStorage`);
         setImage(storedImage);
       } else {
+        console.log(`No image found for ${profileAddress} in localStorage`);
         setImage(null);
       }
     }
@@ -39,42 +46,47 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
     setError('');
     const file = event.target.files?.[0];
 
-    if (!file) return;
+    if (!file || !profileAddress) return;
 
-    // Check file type
     if (!file.type.startsWith('image/')) {
       setError('Please upload an image file');
       return;
     }
 
-    // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       setError('File size must be less than 5MB');
       return;
     }
 
-    if (profileAddress) {
-      // Create form data
+    try {
+      setIsLoading(true);
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('profileAddress', profileAddress);
+      formData.append('data', `{"profileAddress": "${profileAddress}"}`);
 
-      // Upload to our backend API
       const response = await fetch('/api/images/create', {
         method: 'POST',
         body: formData
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Upload failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
       }
 
       const data = await response.json();
 
-      // Store URL in localStorage for quicker access next time
-      localStorage.setItem(profileAddress.toLowerCase(), data?.url);
+      // Store with consistent key format
+      const storageKey = getStorageKey(profileAddress);
+      localStorage.setItem(storageKey, data?.url);
+      console.log(`Stored image URL for ${profileAddress} in localStorage`);
+
       setImage(data?.url);
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      setError(err.message || 'Failed to upload image. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,7 +97,11 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
     }
 
     if (profileAddress) {
-      localStorage.removeItem(`profile-image-${profileAddress.toLowerCase()}`);
+      // Use consistent key format
+      const storageKey = getStorageKey(profileAddress);
+      localStorage.removeItem(storageKey);
+      console.log(`Removed image for ${profileAddress} from localStorage`);
+
       setImage(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -95,7 +111,12 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
 
   return (
     <div className={styles.container}>
-      {image ? (
+      {isLoading ? (
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Processing image...</p>
+        </div>
+      ) : image ? (
         <div className={styles.imageViewer}>
           <img src={image} alt="Profile content" className={styles.image} />
           {isOwner && (

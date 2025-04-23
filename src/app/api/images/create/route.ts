@@ -1,10 +1,12 @@
-import { CloudinaryImageRepository } from '../../../../repositories/cloudinary.image.repository';
 import { NextRequest, NextResponse } from 'next/server';
+import { uploadImageUseCase } from '@/presentation/dependencies';
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('image') as File;
+    const data = formData.get('data');
+    const parsedData = data ? JSON.parse(data as string) : null;
 
     if (!file) {
       return NextResponse.json(
@@ -13,8 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const imageRepository = new CloudinaryImageRepository();
-    const uploadResponse = await imageRepository.uploadImage(file);
+    const uploadResponse = await uploadImageUseCase.execute(file, parsedData);
 
     return NextResponse.json(uploadResponse);
   } catch (error) {
