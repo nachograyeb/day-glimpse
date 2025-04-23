@@ -52,9 +52,55 @@ export class CloudinaryImageRepository implements IImageRepository {
       throw new Error('Failed to upload image', { cause: error });
     }
   }
-  async deleteImage(imageHash: string): Promise<void> {
+  async deleteImage(imageId: string): Promise<void> {
+    try {
+      const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
+
+      await new Promise<void>((resolve, reject) => {
+        cloudinary.uploader.destroy(imageHash, (error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    } catch (error) {
+      console.error('Error in deleteImage:', error);
+      throw new Error('Failed to delete image', { cause: error });
+    }
   }
-  async getImage(imageHash: string): Promise<string> {
-    return 'dumy_string';
+
+  async getImage(imageId: string): Promise<string | null> {
+    try {
+      const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
+
+      return new Promise((resolve, reject) => {
+        cloudinary.api.resource(imageHash, (error, result) => {
+          if (error) {
+            // If resource doesn't exist (404) or other Cloudinary API error
+            if (error.http_code === 404) {
+              resolve(null); // Return null for non-existent images
+            } else {
+              console.error('Cloudinary API error:', error);
+              reject(new Error('Failed to verify image existence'));
+            }
+            return;
+          }
+
+          // If we get here, the image exists, so generate and return the URL
+          const url = cloudinary.url(imageHash, {
+            secure: true,
+            transformation: [
+              { width: 300, height: 300, crop: 'fill' },
+              { quality: 'auto', fetch_format: 'auto' },
+            ],
+          });
+
+          resolve(url);
+        });
+      });
+
+    } catch (error) {
+      console.error('Error in getImage:', error);
+      throw new Error('Failed to get image', { cause: error });
+    }
   }
 }

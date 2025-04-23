@@ -6,5 +6,5 @@ export interface IImageRepository {
     data?: Record<string, any>,
   ): Promise<UploadImageResponse>;
   deleteImage(imageHash: string): Promise<void>;
-  getImage(imageHash: string): Promise<string>;
+  getImage(imageHash: string): Promise<string | null>;
 }
