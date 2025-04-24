@@ -1,13 +1,12 @@
-// src/components/ProfilePage.tsx
 'use client'
 
 import { useProfile } from '@/contexts/ProfileContext';
 import { useProfileImage } from '@/hooks/useProfileImage';
 import { ImageUploader } from './ImageUploader';
 import { ClaimNFTButton } from './nft/ClaimNFTButton';
-import styles from './ProfilePage.module.css';
+import styles from './ProfileContent.module.css';
 
-export const ProfilePage = () => {
+export const ProfileContent = () => {
   const { isOwner, profileAddress } = useProfile();
 
   // Use the hook to get image-related state and functions

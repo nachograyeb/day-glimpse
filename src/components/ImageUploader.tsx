@@ -1,31 +1,31 @@
 'use client'
 
 import { useRef } from 'react';
-import { useProfileImage } from '@/hooks/useProfileImage';
 import styles from './ImageUploader.module.css';
 
 interface ImageUploaderProps {
   isOwner: boolean;
   profileAddress: string | null;
+  image: string | null;
+  error: string;
+  isLoading: boolean;
+  onUpload: (file: File) => Promise<void>;
+  onDelete: () => Promise<void>;
 }
 
-export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) => {
+export const ImageUploader = ({
+  isOwner,
+  profileAddress,
+  image,
+  error,
+  isLoading,
+  onUpload,
+  onDelete
+}: ImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    image,
-    error,
-    isLoading,
-    uploadImage,
-    deleteImage,
-    setError
-  } = useProfileImage({ profileAddress, isOwner });
 
   const handleUploadClick = () => {
-    if (!isOwner) {
-      setError('Only the owner can upload images');
-      return;
-    }
-
+    if (!isOwner) return;
     fileInputRef.current?.click();
   };
 
@@ -34,24 +34,14 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
     if (!file) return;
 
     try {
-      await uploadImage(file);
-
+      await onUpload(file);
+      // Reset file input after successful upload
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
+      // Error is handled in the hook
       console.log('File upload failed');
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const success = await deleteImage();
-      if (success && fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    } catch (err) {
-      console.log('Delete failed');
     }
   };
 
@@ -66,7 +56,7 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
         <div className={styles.imageViewer}>
           <img src={image} alt="Profile content" className={styles.image} />
           {isOwner && (
-            <button onClick={handleDelete} className={styles.deleteButton}>
+            <button onClick={onDelete} className={styles.deleteButton}>
               <span className={styles.deleteIcon}>🗑️</span> Delete Image
             </button>
           )}

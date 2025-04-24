@@ -1,0 +1,150 @@
+'use client'
+
+import { useEffect, useState } from 'react';
+import styles from './NFTClaimModal.module.css';
+
+type NFTClaimStage = 'initial' | 'minting' | 'success' | 'error';
+
+interface NFTClaimModalProps {
+  imageUrl: string;
+  profileAddress: string;
+  onClose: () => void;
+}
+
+export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimModalProps) => {
+  const [stage, setStage] = useState<NFTClaimStage>('initial');
+  const [error, setError] = useState<string | null>(null);
+
+  // Simulate the minting process
+  const handleStartMinting = () => {
+    console.log("handleStartMinting called");
+    setStage('minting');
+
+    // Simulate a minting process with a 50% chance of success
+    setTimeout(() => {
+      const success = Math.random() > 0.5;
+      if (success) {
+        setStage('success');
+      } else {
+        setError('Minting failed: Network error');
+        setStage('error');
+      }
+    }, 5000); // 5 seconds for the simulation
+  };
+
+  // Close modal when clicking outside
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  // Prevent scrolling when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  return (
+    <div className={styles.modalBackdrop} onClick={handleBackdropClick}>
+      <div className={styles.modalContent}>
+        <button className={styles.closeButton} onClick={onClose}>×</button>
+
+        {stage === 'initial' && (
+          <div className={styles.initialStage}>
+            <h2 className={styles.modalTitle}>Claim this image as an NFT</h2>
+            <div className={styles.imagePreview}>
+              <img src={imageUrl} alt="Profile" />
+            </div>
+            <p className={styles.description}>
+              This will create a unique NFT based on this profile image.
+              The NFT will be minted on the same chain as the Universal Profile.
+            </p>
+            <button
+              className={styles.mintButton}
+              onClick={handleStartMinting}
+            >
+              Start Minting
+            </button>
+          </div>
+        )}
+
+        {stage === 'minting' && (
+          <div className={styles.mintingStage}>
+            <h2 className={styles.modalTitle}>Minting your NFT...</h2>
+            <div className={styles.loaderContainer}>
+              <div className={styles.loader}></div>
+            </div>
+            <p className={styles.mintingDescription}>
+              Please wait while we create your NFT.
+              This process typically takes 15-30 seconds.
+            </p>
+          </div>
+        )}
+
+        {stage === 'success' && (
+          <div className={styles.successStage}>
+            <h2 className={styles.modalTitle}>NFT Minted Successfully!</h2>
+            <div className={styles.nftContainer}>
+              <div className={styles.nftFrame}>
+                <img src={imageUrl} alt="Your NFT" />
+              </div>
+              <div className={styles.confetti}></div>
+            </div>
+            <div className={styles.nftDetails}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Token ID:</span>
+                <span className={styles.detailValue}>#12345</span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Collection:</span>
+                <span className={styles.detailValue}>Profile Pictures</span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Owner:</span>
+                <span className={styles.detailValue}>{profileAddress.substring(0, 8)}...{profileAddress.substring(profileAddress.length - 6)}</span>
+              </div>
+            </div>
+            <button className={styles.viewNftButton}>
+              View in wallet
+            </button>
+            <button
+              className={styles.closeSuccessButton}
+              onClick={onClose}
+            >
+              Return to Profile
+            </button>
+          </div>
+        )}
+
+        {stage === 'error' && (
+          <div className={styles.errorStage}>
+            <h2 className={styles.modalTitle}>Minting Failed</h2>
+            <div className={styles.errorIcon}>❌</div>
+            <p className={styles.errorMessage}>{error}</p>
+            <p className={styles.errorDescription}>
+              There was an error while minting your NFT.
+              Please try again later or contact support if the issue persists.
+            </p>
+            <div className={styles.errorButtons}>
+              <button
+                className={styles.tryAgainButton}
+                onClick={handleStartMinting}
+              >
+                Try Again
+              </button>
+              <button
+                className={styles.closeErrorButton}
+                onClick={onClose}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

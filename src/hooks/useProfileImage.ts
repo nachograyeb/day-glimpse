@@ -91,12 +91,10 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const deleteImage = async () => {
     if (!isOwner) {
       setError('Only the owner can delete images');
-      return false;
     }
 
     if (!profileAddress) {
       setError('No profile address provided');
-      return false;
     }
 
     try {
@@ -112,11 +110,9 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       }
 
       setImage(null);
-      return true;
     } catch (err: any) {
       console.error('Error deleting image:', err);
       setError(err.message || 'Failed to delete image. Please try again.');
-      return false;
     } finally {
       setIsLoading(false);
     }
