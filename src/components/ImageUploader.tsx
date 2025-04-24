@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef } from 'react';
+import { useProfileImage } from '@/hooks/useProfileImage';
 import styles from './ImageUploader.module.css';
 
 interface ImageUploaderProps {
@@ -9,36 +10,15 @@ interface ImageUploaderProps {
 }
 
 export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) => {
-  const [image, setImage] = useState<string | null>(null);
-  const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const getStorageKey = (address: string) => `profile-image-${address.toLowerCase()}`;
-
-  useEffect(() => {
-    if (profileAddress) {
-      const fetchImageFromAPI = async () => {
-        try {
-          setIsLoading(true);
-          const response = await fetch(`/api/images/get?imageId=${profileAddress}`);
-
-          if (response.ok) {
-            const url = await response.json();
-            setImage(url);
-          } else {
-            console.log(`No image found on the server for ${profileAddress}`);
-          }
-        } catch (error) {
-          console.error('Error fetching image from API:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchImageFromAPI();
-    }
-  }, [profileAddress]);
+  const {
+    image,
+    error,
+    isLoading,
+    uploadImage,
+    deleteImage,
+    setError
+  } = useProfileImage({ profileAddress, isOwner });
 
   const handleUploadClick = () => {
     if (!isOwner) {
@@ -50,73 +30,28 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    setError('');
     const file = event.target.files?.[0];
-
-    if (!file || !profileAddress) return;
-
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
-      return;
-    }
+    if (!file) return;
 
     try {
-      setIsLoading(true);
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('data', `{"profileAddress": "${profileAddress}"}`);
+      await uploadImage(file);
 
-      const response = await fetch('/api/images/create', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-
-      const data = await response.json();
-
-      setImage(data?.url);
-    } catch (err: any) {
-      console.error('Error uploading image:', err);
-      setError(err.message || 'Failed to upload image. Please try again.');
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.log('File upload failed');
     }
   };
 
   const handleDelete = async () => {
-    if (!isOwner) {
-      setError('Only the owner can delete images');
-      return;
-    }
-
-    if (profileAddress) {
-      try {
-        const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Delete failed');
-        }
-
-        setImage(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      } catch (err: any) {
-        console.error('Error deleting image:', err);
-        setError(err.message || 'Failed to delete image. Please try again.');
+    try {
+      const success = await deleteImage();
+      if (success && fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
+    } catch (err) {
+      console.log('Delete failed');
     }
   };
 

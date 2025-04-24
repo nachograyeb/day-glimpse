@@ -1,0 +1,133 @@
+'use client'
+
+import { useState, useEffect } from 'react';
+
+interface UseProfileImageProps {
+  profileAddress: string | null;
+  isOwner: boolean;
+}
+
+export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProps) {
+  const [image, setImage] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (profileAddress) {
+      fetchImage(profileAddress);
+    }
+  }, [profileAddress]);
+
+  const fetchImage = async (address: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/images/get?imageId=${address}`);
+
+      if (response.ok) {
+        const url = await response.json();
+        setImage(url);
+      } else {
+        console.log(`No image found on the server for ${address}`);
+        setImage(null);
+      }
+    } catch (error) {
+      console.error('Error fetching image from API:', error);
+      setImage(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    if (!isOwner) {
+      setError('Only the owner can upload images');
+      return;
+    }
+
+    if (!profileAddress) {
+      setError('No profile address provided');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setError('');
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('data', `{"profileAddress": "${profileAddress}"}`);
+
+      const response = await fetch('/api/images/create', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      setImage(data?.url);
+      return data?.url;
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      setError(err.message || 'Failed to upload image. Please try again.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteImage = async () => {
+    if (!isOwner) {
+      setError('Only the owner can delete images');
+      return false;
+    }
+
+    if (!profileAddress) {
+      setError('No profile address provided');
+      return false;
+    }
+
+    try {
+      setError('');
+      setIsLoading(true);
+      const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Delete failed');
+      }
+
+      setImage(null);
+      return true;
+    } catch (err: any) {
+      console.error('Error deleting image:', err);
+      setError(err.message || 'Failed to delete image. Please try again.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    image,
+    error,
+    isLoading,
+    uploadImage,
+    deleteImage,
+    setError,
+  };
+}
