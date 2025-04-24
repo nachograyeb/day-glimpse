@@ -18,39 +18,25 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
 
   useEffect(() => {
     if (profileAddress) {
-      const storageKey = getStorageKey(profileAddress);
-      const storedImage = localStorage.getItem(storageKey);
+      const fetchImageFromAPI = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch(`/api/images/get?imageId=${profileAddress}`);
 
-      if (storedImage) {
-        console.log(`Found image for ${profileAddress} in localStorage`);
-        setImage(storedImage);
-      } else {
-        console.log(`No image found for ${profileAddress} in localStorage. Getting image from repository...`);
-
-        const fetchImageFromAPI = async () => {
-          try {
-            setIsLoading(true);
-            const response = await fetch(`/api/images/get?imageId=${profileAddress}`);
-
-            if (response.ok) {
-              const url = await response.json();
-              if (url) {
-                localStorage.setItem(storageKey, url);
-                setImage(url);
-                console.log(`Fetched and stored image URL from API for ${profileAddress}`);
-              }
-            } else {
-              console.log(`No image found on the server for ${profileAddress}`);
-            }
-          } catch (error) {
-            console.error('Error fetching image from API:', error);
-          } finally {
-            setIsLoading(false);
+          if (response.ok) {
+            const url = await response.json();
+            setImage(url);
+          } else {
+            console.log(`No image found on the server for ${profileAddress}`);
           }
-        };
+        } catch (error) {
+          console.error('Error fetching image from API:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-        fetchImageFromAPI();
-      }
+      fetchImageFromAPI();
     }
   }, [profileAddress]);
 
@@ -97,11 +83,6 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
 
       const data = await response.json();
 
-      // Store with consistent key format
-      const storageKey = getStorageKey(profileAddress);
-      localStorage.setItem(storageKey, data?.url);
-      console.log(`Stored image URL for ${profileAddress} in localStorage`);
-
       setImage(data?.url);
     } catch (err: any) {
       console.error('Error uploading image:', err);
@@ -119,10 +100,6 @@ export const ImageUploader = ({ isOwner, profileAddress }: ImageUploaderProps) =
 
     if (profileAddress) {
       try {
-        const storageKey = getStorageKey(profileAddress);
-        localStorage.removeItem(storageKey);
-        console.log(`Removed image for ${profileAddress} from localStorage`);
-
         const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
           method: 'DELETE',
         });

@@ -35,6 +35,8 @@ export class CloudinaryImageRepository implements IImageRepository {
           {
             public_id: crypto.createHash('SHA256').update(data?.profileAddress).digest('hex'),
             overwrite: true,
+            resource_type: 'image',
+            invalidate: true,
           },
           (error, result) => {
             if (error) reject(error);
@@ -73,7 +75,7 @@ export class CloudinaryImageRepository implements IImageRepository {
       const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
 
       return new Promise((resolve, reject) => {
-        cloudinary.api.resource(imageHash, (error) => {
+        cloudinary.api.resource(imageHash, (error, result) => {
           if (error) {
             if (error.http_code === 404) {
               resolve(null);
@@ -86,6 +88,7 @@ export class CloudinaryImageRepository implements IImageRepository {
 
           const url = cloudinary.url(imageHash, {
             secure: true,
+            version: result.version,
           });
 
           resolve(url);
