@@ -1,9 +1,9 @@
-// src/app/page.tsx
 'use client'
 
 import { useEffect } from 'react';
 import { ProfileProvider } from '@/contexts/ProfileContext';
-import { ConnectProfile } from '@/components/ConnectProfile';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { ProfilePage } from '@/components/ProfilePage';
 
 export default function Home() {
   useEffect(() => {
@@ -31,7 +31,9 @@ export default function Home() {
 
   return (
     <ProfileProvider>
-      <ConnectProfile />
+      <AppLayout>
+        <ProfilePage />
+      </AppLayout>
     </ProfileProvider>
   );
 }
