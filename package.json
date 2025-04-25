@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "deploy": "node scripts/deploy.ts",
     "lint": "next lint"
   },
   "dependencies": {
@@ -19,12 +20,15 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/node": "^20.17.31",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
-    "typescript": "^5"
+    "hardhat": "^2.23.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
