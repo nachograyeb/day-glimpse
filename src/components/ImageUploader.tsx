@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import styles from './ImageUploader.module.css';
 
 interface ImageUploaderProps {
@@ -11,18 +11,26 @@ interface ImageUploaderProps {
   isLoading: boolean;
   onUpload: (file: File) => Promise<void>;
   onDelete: () => Promise<void>;
+  onImageLoad?: (loaded: boolean) => void;
 }
 
 export const ImageUploader = ({
   isOwner,
-  profileAddress,
   image,
   error,
   isLoading,
   onUpload,
-  onDelete
+  onDelete,
+  onImageLoad
 }: ImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    if (onImageLoad) {
+      onImageLoad(imageLoaded);
+    }
+  }, [imageLoaded, onImageLoad]);
 
   const handleUploadClick = () => {
     if (!isOwner) return;
@@ -34,16 +42,32 @@ export const ImageUploader = ({
     if (!file) return;
 
     try {
+      setImageLoaded(false);
       await onUpload(file);
-      // Reset file input after successful upload
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
-      // Error is handled in the hook
       console.log('File upload failed');
     }
   };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageLoaded(false);
+    onDelete();
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  useEffect(() => {
+    if (!image) {
+      setImageLoaded(false);
+    }
+  }, [image]);
 
   return (
     <div className={styles.container}>
@@ -54,9 +78,18 @@ export const ImageUploader = ({
         </div>
       ) : image ? (
         <div className={styles.imageViewer}>
-          <img src={image} alt="Profile content" className={styles.image} />
-          {isOwner && (
-            <button onClick={onDelete} className={styles.deleteButton}>
+          <img
+            src={image}
+            alt="Profile content"
+            className={styles.image}
+            onLoad={handleImageLoad}
+          />
+          {isOwner && imageLoaded && (
+            <button
+              onClick={handleDeleteClick}
+              className={styles.deleteButton}
+              aria-label="Delete image"
+            >
               <span className={styles.deleteIcon}>🗑️</span> Delete Image
             </button>
           )}

@@ -7,13 +7,17 @@ import { NFTClaimModal } from './NFTClaimModal';
 interface ClaimNFTButtonProps {
   imageUrl: string | null;
   profileAddress: string | null;
+  imageLoaded?: boolean;
 }
 
-export const ClaimNFTButton = ({ imageUrl, profileAddress }: ClaimNFTButtonProps) => {
+export const ClaimNFTButton = ({
+  imageUrl,
+  profileAddress,
+  imageLoaded = true
+}: ClaimNFTButtonProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Only show the button if there's an image to claim
-  if (!imageUrl || !profileAddress) {
+  if (!imageUrl || !profileAddress || !imageLoaded) {
     return null;
   }
 

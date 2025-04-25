@@ -1,6 +1,6 @@
-// src/components/ProfilePage.tsx
 'use client'
 
+import { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useProfileImage } from '@/hooks/useProfileImage';
 import { ImageUploader } from './ImageUploader';
@@ -9,8 +9,8 @@ import styles from './ProfilePage.module.css';
 
 export const ProfilePage = () => {
   const { isOwner, profileAddress } = useProfile();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Use the hook to get image-related state and functions
   const {
     image,
     error,
@@ -22,10 +22,13 @@ export const ProfilePage = () => {
     isOwner
   });
 
+  const handleImageLoadChange = (loaded: boolean) => {
+    setImageLoaded(loaded);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.imageContainer}>
-        {/* Pass the image data and functions to ImageUploader */}
         <ImageUploader
           isOwner={isOwner}
           profileAddress={profileAddress}
@@ -34,13 +37,14 @@ export const ProfilePage = () => {
           isLoading={isLoading}
           onUpload={uploadImage}
           onDelete={deleteImage}
+          onImageLoad={handleImageLoadChange}
         />
 
-        {/* NFT claim button only appears for non-owners when an image exists */}
         {!isOwner && image && profileAddress && (
           <ClaimNFTButton
             imageUrl={image}
             profileAddress={profileAddress}
+            imageLoaded={imageLoaded}
           />
         )}
       </div>
