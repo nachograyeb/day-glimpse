@@ -43,3 +43,6 @@ next-env.d.ts
 # solidity
 /artifacts
 /cache
+
+# hardhat
+/typechain-types

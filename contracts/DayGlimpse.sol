@@ -25,22 +25,10 @@ contract DayGlimpse {
 
     function getDayGlimpse(
         address _profile
-    )
-        external
-        view
-        returns (
-            bytes memory storageHash,
-            uint256 timestamp,
-            bool isPrivate,
-            bool isActive
-        )
-    {
+    ) external view returns (DayGlimpseData memory) {
         DayGlimpseData storage data = profileToDayGlimpse[_profile];
-        return (
-            data.storageHash,
-            data.timestamp,
-            data.isPrivate,
-            data.isActive
-        );
+        require(data.isActive, "DayGlimpse: No active data for this profile");
+
+        return data;
     }
 }

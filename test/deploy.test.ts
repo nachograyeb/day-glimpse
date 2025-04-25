@@ -10,7 +10,7 @@ async function main() {
   await dayGlimpse.waitForDeployment();
 
   await dayGlimpse.connect(owner).setDayGlimpse(
-    'c26fbfb43a5a67dcd83d84864749e6c20a0f89a0878ad7ce26f9f1b630a7f45c',
+    '0xc26fbfb43a5a67dcd83d84864749e6c20a0f89a0878ad7ce26f9f1b630a7f45c',
     Date.now(),
     false,
   );
