@@ -13,6 +13,7 @@ export const useDayGlimpse = () => {
 
       return await callContract(contractAddress, abi, "getDayGlimpse", [profileAddress]);
     } catch (error) {
+      console.log(error);
       console.log("getDayGlimpse reverted. Returning null dayGlimpse data...");
       return null;
     }

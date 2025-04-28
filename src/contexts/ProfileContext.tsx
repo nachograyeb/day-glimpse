@@ -131,11 +131,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const callContract = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[]) => {
     if (!provider || !profileAddress) throw new Error('No provider or profile address available');
+    if (!signer) throw new Error('No signer available');
 
     try {
-      // Create a direct provider for encoding
-      const directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
-      const contract = new ethers.Contract(contractAddress, abi, directProvider);
+      const contract = new ethers.Contract(contractAddress, abi, signer);
 
       // Encode the function call
       const data = contract.interface.encodeFunctionData(method, args);
@@ -173,7 +172,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.log(`Error in ${method}:`, error);
       throw error;
     }
-  }, [provider, profileAddress]);
+  }, [provider, profileAddress, signer]);
 
   const sendTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
     if (!signer) throw new Error('No signer available');
