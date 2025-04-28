@@ -8,9 +8,14 @@ export const useDayGlimpse = () => {
   const { callContract, sendTransaction, walletConnected } = useProfile();
 
   const getDayGlimpse = async (profileAddress: string) => {
-    if (!walletConnected) throw new Error("Wallet not connected");
+    try {
+      if (!walletConnected) throw new Error("Wallet not connected");
 
-    return await callContract(contractAddress, abi, "getDayGlimpse", [profileAddress]);
+      return await callContract(contractAddress, abi, "getDayGlimpse", [profileAddress]);
+    } catch (error) {
+      console.log("getDayGlimpse reverted. Returning null dayGlimpse data...");
+      return null;
+    }
   };
 
   const isExpired = async (profileAddress: string) => {

@@ -170,7 +170,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const decodedResult = contract.interface.decodeFunctionResult(method, result);
       return decodedResult.length === 1 ? decodedResult[0] : decodedResult;
     } catch (error) {
-      console.error(`Error in ${method}:`, error);
+      console.log(`Error in ${method}:`, error);
       throw error;
     }
   }, [provider, profileAddress]);

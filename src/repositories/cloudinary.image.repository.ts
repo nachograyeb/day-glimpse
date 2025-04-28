@@ -33,7 +33,7 @@ export class CloudinaryImageRepository implements IImageRepository {
       const uploadResponse = await new Promise<CloudinaryUploadResponse>((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
-            public_id: crypto.createHash('SHA256').update(data?.profileAddress).digest('hex'),
+            public_id: `0x${crypto.createHash('SHA256').update(data.profileAddress).digest('hex')}`,
             overwrite: true,
             resource_type: 'image',
             invalidate: true,
@@ -56,10 +56,8 @@ export class CloudinaryImageRepository implements IImageRepository {
   }
   async deleteImage(imageId: string): Promise<void> {
     try {
-      const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
-
       await new Promise<void>((resolve, reject) => {
-        cloudinary.uploader.destroy(imageHash, (error) => {
+        cloudinary.uploader.destroy(imageId, (error) => {
           if (error) reject(error);
           else resolve();
         });
@@ -72,10 +70,8 @@ export class CloudinaryImageRepository implements IImageRepository {
 
   async getImage(imageId: string): Promise<string | null> {
     try {
-      const imageHash = crypto.createHash('SHA256').update(imageId).digest('hex');
-
       return new Promise((resolve, reject) => {
-        cloudinary.api.resource(imageHash, (error, result) => {
+        cloudinary.api.resource(imageId, (error, result) => {
           if (error) {
             if (error.http_code === 404) {
               resolve(null);
@@ -86,7 +82,7 @@ export class CloudinaryImageRepository implements IImageRepository {
             return;
           }
 
-          const url = cloudinary.url(imageHash, {
+          const url = cloudinary.url(imageId, {
             secure: true,
             version: result.version,
           });

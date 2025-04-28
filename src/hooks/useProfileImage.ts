@@ -24,13 +24,21 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const fetchImage = async (address: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/images/get?imageId=${address}`);
+      const dayGlimpseData = await getDayGlimpse(address);
+      console.log('DayGlimpse data:', dayGlimpseData);
+
+      if (!dayGlimpseData?.storageHash) {
+        console.log(`No image found for ${address}`);
+        setImage(null);
+
+        return;
+      }
+
+      const response = await fetch(`/api/images/get?imageId=${dayGlimpseData.storageHash}`);
 
       if (response.ok) {
         const url = await response.json();
         setImage(url);
-        const data = await getDayGlimpse(address);
-        console.log('TestFunc:', data);
       } else {
         console.log(`No image found on the server for ${address}`);
         setImage(null);
@@ -84,7 +92,9 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       const data = await response.json();
       setImage(data?.url);
 
-      await setDayGlimpse(`0x${data?.id}`, false);
+      if (data?.url && data?.id) {
+        await setDayGlimpse(data.id, false);
+      }
 
       return data?.url;
     } catch (err: any) {
@@ -108,7 +118,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
-      // await deleteDayGlimpse();
+      await deleteDayGlimpse();
       const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
         method: 'DELETE',
       });
