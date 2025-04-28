@@ -1,6 +1,10 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ethers";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, ".env.hardhat") });
 
 /** @type import('hardhat/config').HardhatUserConfig */
 const config: HardhatUserConfig = {
@@ -16,6 +20,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
     },
+    luksoTestnet: {
+      url: process.env.LUKSO_RPC_URL || "",
+      chainId: 4201,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    }
   },
 };
 

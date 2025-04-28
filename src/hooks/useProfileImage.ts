@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import { useDayGlimpse } from './useDayGlimpse';
 
 interface UseProfileImageProps {
   profileAddress: string | null;
@@ -11,6 +12,8 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [image, setImage] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, testFunc } = useDayGlimpse();
 
   useEffect(() => {
     if (profileAddress) {
@@ -26,6 +29,8 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       if (response.ok) {
         const url = await response.json();
         setImage(url);
+        const data = await getDayGlimpse(address);
+        console.log('TestFunc:', data);
       } else {
         console.log(`No image found on the server for ${address}`);
         setImage(null);
@@ -78,6 +83,9 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
 
       const data = await response.json();
       setImage(data?.url);
+
+      await setDayGlimpse(`0x${data?.id}`, false);
+
       return data?.url;
     } catch (err: any) {
       console.error('Error uploading image:', err);
@@ -100,6 +108,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
+      // await deleteDayGlimpse();
       const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
         method: 'DELETE',
       });
