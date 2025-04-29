@@ -33,7 +33,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
 
         if (await isExpired(address)) {
           console.log(`Image expired for ${address}`);
-          await markExpired(address);
+          markExpired(address).then(() => console.log('Marked image as expired'));
         }
 
         return;
