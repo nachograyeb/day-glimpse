@@ -13,7 +13,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, testFunc } = useDayGlimpse();
+  const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired } = useDayGlimpse();
 
   useEffect(() => {
     if (profileAddress) {
@@ -30,6 +30,11 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       if (!dayGlimpseData?.storageHash) {
         console.log(`No image found for ${address}`);
         setImage(null);
+
+        if (await isExpired(address)) {
+          console.log(`Image expired for ${address}`);
+          await markExpired(address);
+        }
 
         return;
       }
@@ -109,10 +114,12 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const deleteImage = async () => {
     if (!isOwner) {
       setError('Only the owner can delete images');
+      return;
     }
 
     if (!profileAddress) {
       setError('No profile address provided');
+      return;
     }
 
     try {

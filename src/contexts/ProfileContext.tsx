@@ -17,6 +17,7 @@ interface ProfileContextType {
   signer: ethers.JsonRpcSigner | null;
   callContract: (contractAddress: string, abi: any[], method: string, args: any[]) => Promise<any>;
   sendTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionResponse>;
+  sendAppTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<any>; // Updated to work with API
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -35,7 +36,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [directProvider, setDirectProvider] = useState<ethers.JsonRpcProvider | null>(null);
 
   const updateConnected = useCallback((accounts: Array<`0x${string}`>, contextAccounts: Array<`0x${string}`>, chainId: number) => {
-    // console.log('Accounts:', accounts, 'Context:', contextAccounts, 'Chain ID:', chainId)
     setWalletConnected(accounts.length > 0 && contextAccounts.length > 0)
 
     if (contextAccounts.length > 0) {
@@ -45,7 +45,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (accounts.length > 0 && contextAccounts.length > 0) {
       const isOwner = accounts[0].toLowerCase() === contextAccounts[0].toLowerCase();
       setIsOwner(isOwner);
-      // console.log('Is owner?', isOwner);
     } else {
       setIsOwner(false);
     }
@@ -54,11 +53,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
+        // Setup the UP provider for the user
         const _provider = createClientUPProvider()
         const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider)
         setProvider(_provider)
         setBrowserProvider(_browserProvider)
 
+        // Setup the direct provider for read-only operations
         const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
         setDirectProvider(_directProvider);
 
@@ -130,7 +131,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [browserProvider, provider, chainId, accounts, contextAccounts, updateConnected])
 
   const callContract = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[]) => {
-    if (!provider || !profileAddress) throw new Error('No provider or profile address available');
+    if (!provider || !accounts[0]) throw new Error('No provider or profile address available');
     if (!signer) throw new Error('No signer available');
 
     try {
@@ -146,7 +147,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           {
             to: contractAddress,
             data,
-            from: profileAddress
+            from: accounts[0],
           },
           'latest'
         ]
@@ -172,14 +173,45 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.log(`Error in ${method}:`, error);
       throw error;
     }
-  }, [provider, profileAddress, signer]);
+  }, [provider, accounts, signer]);
 
   const sendTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
     if (!signer) throw new Error('No signer available');
     const contract = new ethers.Contract(contractAddress, abi, signer);
-    console.log('contract', contract);
+    console.log('User contract interaction:', method);
     return await contract[method](...args, options);
   }, [signer]);
+
+  const sendAppTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
+    try {
+      // Call the server-side API endpoint
+      const response = await fetch('/api/app-transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractAddress,
+          methodName: method,
+          args,
+          options,
+          abi: abi, // Be careful with sending ABI in every request - consider alternatives for production
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to execute transaction');
+      }
+
+      const result = await response.json();
+      console.log('App transaction succeeded:', result.transactionHash);
+      return result;
+    } catch (error) {
+      console.error('App transaction failed:', error);
+      throw error;
+    }
+  }, []);
 
   return (
     <ProfileContext.Provider value={{
@@ -195,6 +227,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       signer,
       callContract,
       sendTransaction,
+      sendAppTransaction
     }}>
       {children}
     </ProfileContext.Provider>

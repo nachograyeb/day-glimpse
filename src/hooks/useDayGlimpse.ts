@@ -1,11 +1,12 @@
 import { useProfile } from "@/contexts/ProfileContext";
 import * as DayGlimpse from "../../artifacts/contracts/DayGlimpse.sol/DayGlimpse.json";
 
-const contractAddress = "0x5a70bFDdcb76D47ca69f2A69b12a50b226b51403";
+// const contractAddress = "0x5a70bFDdcb76D47ca69f2A69b12a50b226b51403"; // 24-hour stories
+const contractAddress = "0x66BBE91Fd032B96c40aeB4c71b367c9829B66FE4"; //1-minute stories
 const abi = DayGlimpse.abi;
 
 export const useDayGlimpse = () => {
-  const { callContract, sendTransaction, walletConnected } = useProfile();
+  const { callContract, sendTransaction, sendAppTransaction: sendTransactionDirectProvider, walletConnected } = useProfile();
 
   const getDayGlimpse = async (profileAddress: string) => {
     try {
@@ -25,10 +26,9 @@ export const useDayGlimpse = () => {
     return await callContract(contractAddress, abi, "isExpired", [profileAddress]);
   };
 
-  const testFunc = async () => {
+  const markExpired = async (profileAddress: string) => {
     if (!walletConnected) throw new Error("Wallet not connected");
-
-    return await callContract(contractAddress, abi, "testFunc", []);
+    return await sendTransactionDirectProvider(contractAddress, abi, "markExpired", [profileAddress]);
   };
 
   const setDayGlimpse = async (storageHash: string, isPrivate: boolean) => {
@@ -46,5 +46,5 @@ export const useDayGlimpse = () => {
     return await sendTransaction(contractAddress, abi, "deleteDayGlimpse", []);
   };
 
-  return { getDayGlimpse, setDayGlimpse, deleteDayGlimpse, isExpired, testFunc };
+  return { getDayGlimpse, setDayGlimpse, deleteDayGlimpse, isExpired, markExpired, };
 }
