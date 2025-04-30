@@ -1,9 +1,8 @@
 import { useProfile } from "@/contexts/ProfileContext";
-import * as DayGlimpse from "../../artifacts/contracts/DayGlimpse.sol/DayGlimpse.json";
+import contractData from "../../artifacts/contracts/DayGlimpse.sol/DayGlimpse.json";
 
-const dayGlimpseAddress = "0x3De1D1b6dfE28641e90Ea8A30e0463731e2D6D18"; // 24-hour stories
-// const dayGlimpseAddress = "0x66BBE91Fd032B96c40aeB4c71b367c9829B66FE4"; //1-minute stories
-const abi = DayGlimpse.abi;
+const dayGlimpseAddress = process.env.NEXT_PUBLIC_DAYGLIMPSE_ADDRESS as string;
+const abi = contractData.abi;
 
 export const useDayGlimpse = () => {
   const { callContract, sendTransaction, sendAppTransaction: sendTransactionDirectProvider, walletConnected } = useProfile();
