@@ -25,7 +25,7 @@ export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimMod
       await mintNFT(profileAddress);
       setStage('success');
     } catch (err) {
-      console.error("Minting error:", err);
+      console.log("Minting error:", err);
       setError('Minting failed: ' + (err as Error).message);
       setStage('error');
       return;

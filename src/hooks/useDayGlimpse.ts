@@ -48,7 +48,12 @@ export const useDayGlimpse = () => {
 
   const mintNFT = async (profileAddress: string) => {
     if (!walletConnected) throw new Error("Wallet not connected");
-    return await sendTransaction(dayGlimpseAddress, abi, "mintNFT", [profileAddress, false, '0x']);
+    try {
+      return await sendTransaction(dayGlimpseAddress, abi, "mintNFT", [profileAddress, false, '0x']);
+    } catch (error) {
+      console.log(error);
+      throw new Error("Either you already minted this NFT or an unknown error occurred");
+    }
   }
 
   return { getDayGlimpse, setDayGlimpse, deleteDayGlimpse, isExpired, markExpired, mintNFT, };
