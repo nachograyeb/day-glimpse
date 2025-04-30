@@ -1,11 +1,12 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, ContractFactory } from "ethers";
+import { ContractFactory } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("DayGlimpse", function () {
   let dayGlimpse: any;
+  let mockNFTContract: any;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -19,9 +20,33 @@ describe("DayGlimpse", function () {
     // Get signers
     [owner, user1, user2, ...users] = await ethers.getSigners();
 
+    // Deploy mock NFT contract
+    const MockNFTFactory = await ethers.getContractFactory("MockDayGlimpseNFT");
+    mockNFTContract = await MockNFTFactory.deploy();
+
     // Deploy contract
     const DayGlimpseFactory: ContractFactory = await ethers.getContractFactory("DayGlimpse");
     dayGlimpse = await DayGlimpseFactory.deploy();
+  });
+
+  describe("Owner functions", function () {
+    it("Should set the NFT contract address", async function () {
+      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+
+      expect(await dayGlimpse.nftContractAddress()).to.equal(mockNFTContract.target);
+
+      // Check if an event was emitted
+      const filter = dayGlimpse.filters.NFTContractSet;
+      const events = await dayGlimpse.queryFilter(filter);
+      expect(events.length).to.equal(1);
+      expect(events[0].args[0]).to.equal(mockNFTContract.target);
+    });
+
+    it("Should fail when non-owner tries to set NFT contract", async function () {
+      await expect(
+        dayGlimpse.connect(user1).setNFTContract(mockNFTContract.target)
+      ).to.be.revertedWith("DayGlimpse: Caller is not the owner");
+    });
   });
 
   describe("setDayGlimpse", function () {
@@ -30,7 +55,7 @@ describe("DayGlimpse", function () {
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
 
       // Check if an event was emitted
-      const filter = dayGlimpse.filters.DayGlimpseCreated(user1.address);
+      const filter = dayGlimpse.filters.DayGlimpseCreated;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
       expect(events[0].args[0]).to.equal(user1.address); // profile address
@@ -45,7 +70,7 @@ describe("DayGlimpse", function () {
       await dayGlimpse.connect(user1).setDayGlimpse(newStorageHash, true);
 
       // Check if two events were emitted
-      const filter = dayGlimpse.filters.DayGlimpseCreated(user1.address);
+      const filter = dayGlimpse.filters.DayGlimpseCreated;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(2);
 
@@ -105,7 +130,7 @@ describe("DayGlimpse", function () {
       await dayGlimpse.connect(user2).markExpired(user1.address);
 
       // Verify an event was emitted
-      const filter = dayGlimpse.filters.DayGlimpseExpired(user1.address);
+      const filter = dayGlimpse.filters.DayGlimpseExpired;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
       expect(events[0].args[0]).to.equal(user1.address);
@@ -138,7 +163,7 @@ describe("DayGlimpse", function () {
       await dayGlimpse.connect(user1).deleteDayGlimpse();
 
       // Verify an event was emitted
-      const filter = dayGlimpse.filters.DayGlimpseDeleted(user1.address);
+      const filter = dayGlimpse.filters.DayGlimpseDeleted;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
 
@@ -181,6 +206,73 @@ describe("DayGlimpse", function () {
 
       const expired = await dayGlimpse.isExpired(user1.address);
       expect(expired).to.equal(false);
+    });
+  });
+
+  describe("mintNFT", function () {
+    beforeEach(async function () {
+      // Set a day glimpse as user1 for testing
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
+
+      // Set the NFT contract
+      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+    });
+
+    it("Should fail to mint when NFT contract is not set", async function () {
+      // Deploy a new contract without setting the NFT contract
+      const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
+      const newDayGlimpse = await DayGlimpseFactory.deploy();
+
+      // Set a day glimpse
+      await newDayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      await expect(
+        newDayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
+      ).to.be.revertedWith("DayGlimpse: NFT contract not set");
+    });
+
+    it("Should fail to mint when glimpse is private", async function () {
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, true);
+
+      await expect(
+        dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
+      ).to.be.revertedWith("DayGlimpse: Cannot mint from private DayGlimpse");
+    });
+
+    it("Should fail to mint when content is expired", async function () {
+      // Set a public glimpse
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      // Increase time by 25 hours (past expiration)
+      await time.increase(25 * 60 * 60);
+
+      await expect(
+        dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
+      ).to.be.revertedWith("DayGlimpse: Content has expired");
+    });
+
+    it("Should mint NFT successfully", async function () {
+      // Set a public glimpse
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      // Mock the NFT contract to return a tokenId
+      const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
+      await mockNFTContract.setMockTokenId(mockTokenId);
+
+      // Mint NFT
+      const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x");
+
+      // Check if token was minted correctly
+      expect(await mockNFTContract.lastMinter()).to.equal(user2.address);
+      expect(await mockNFTContract.lastProfile()).to.equal(user1.address);
+
+      // Verify an event was emitted
+      const filter = dayGlimpse.filters.DayGlimpseNFTMinted;
+      const events = await dayGlimpse.queryFilter(filter);
+      expect(events.length).to.equal(1);
+      expect(events[0].args[0]).to.equal(user2.address); // minter
+      expect(events[0].args[1]).to.equal(user1.address); // profile
+      expect(events[0].args[3]).to.equal(mockTokenId); // tokenId
     });
   });
 });

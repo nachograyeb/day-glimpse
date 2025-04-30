@@ -10,10 +10,11 @@
     "deploy:luksoTestnet": "hardhat run scripts/deploy.ts --network luksoTestnet --tsconfig tsconfig.hardhat.json",
     "test:contracts": "hardhat test --tsconfig tsconfig.hardhat.json",
     "testo": "npx ts-node --project tsconfig.hardhat.json scripts/testo.ts",
-    "compile": "hardhat compile",
+    "compile": "hardhat compile --tsconfig tsconfig.hardhat.json",
     "lint": "next lint"
   },
   "dependencies": {
+    "@lukso/lsp8-contracts": "^0.16.3",
     "@lukso/up-provider": "^0.3.5",
     "cloudinary": "^2.6.0",
     "crypto": "^1.0.1",
