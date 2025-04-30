@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './NFTClaimModal.module.css';
+import { useDayGlimpse } from '@/hooks/useDayGlimpse';
 
 type NFTClaimStage = 'initial' | 'minting' | 'success' | 'error';
 
@@ -14,32 +15,29 @@ interface NFTClaimModalProps {
 export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimModalProps) => {
   const [stage, setStage] = useState<NFTClaimStage>('initial');
   const [error, setError] = useState<string | null>(null);
+  const { mintNFT } = useDayGlimpse();
 
-  // Simulate the minting process
-  const handleStartMinting = () => {
+  const handleStartMinting = async () => {
     console.log("handleStartMinting called");
     setStage('minting');
 
-    // Simulate a minting process with a 50% chance of success
-    setTimeout(() => {
-      const success = Math.random() > 0.5;
-      if (success) {
-        setStage('success');
-      } else {
-        setError('Minting failed: Network error');
-        setStage('error');
-      }
-    }, 5000); // 5 seconds for the simulation
+    try {
+      await mintNFT(profileAddress);
+      setStage('success');
+    } catch (err) {
+      console.error("Minting error:", err);
+      setError('Minting failed: ' + (err as Error).message);
+      setStage('error');
+      return;
+    }
   };
 
-  // Close modal when clicking outside
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
-  // Prevent scrolling when modal is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
