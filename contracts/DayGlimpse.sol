@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import "hardhat/console.sol";
+
 interface IDayGlimpseNFT {
     function mintDayGlimpseNFT(
         address minter,
@@ -16,6 +18,17 @@ interface IDayGlimpseNFT {
         address profile,
         uint256 timestamp
     ) external pure returns (bytes32);
+
+    function getDayGlimpseDataForToken(
+        bytes32 tokenId
+    )
+        external
+        view
+        returns (bytes memory storageHash, address profile, uint256 timestamp);
+
+    function tokenIdsOf(
+        address tokenOwner
+    ) external view returns (bytes32[] memory);
 }
 
 contract DayGlimpse {
@@ -85,6 +98,13 @@ contract DayGlimpse {
             block.timestamp <= data.timestamp + EXPIRATION_TIME,
             "DayGlimpse: Content has expired"
         );
+
+        if (data.isPrivate) {
+            require(
+                _isCloseFriend(msg.sender, _profile),
+                "DayGlimpse: This content is only available to close friends"
+            );
+        }
 
         return data;
     }
@@ -156,5 +176,26 @@ contract DayGlimpse {
             return false;
         }
         return block.timestamp > data.timestamp + EXPIRATION_TIME;
+    }
+
+    function _isCloseFriend(
+        address viewer,
+        address profile
+    ) private view returns (bool) {
+        if (nftContractAddress == address(0)) return false;
+        if (viewer == profile) return true;
+
+        bytes32[] memory tokenIds = IDayGlimpseNFT(nftContractAddress)
+            .tokenIdsOf(msg.sender);
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            (, address tokenProfile, ) = IDayGlimpseNFT(nftContractAddress)
+                .getDayGlimpseDataForToken(tokenIds[i]);
+            if (tokenProfile == profile) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

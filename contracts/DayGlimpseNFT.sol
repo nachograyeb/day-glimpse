@@ -73,4 +73,22 @@ contract DayGlimpseNFT is LSP8Mintable {
     ) public pure returns (bytes32) {
         return bytes32(keccak256(abi.encodePacked(user, profile, timestamp)));
     }
+
+    function getDayGlimpseDataForToken(
+        bytes32 tokenId
+    )
+        external
+        view
+        returns (bytes memory storageHash, address profile, uint256 timestamp)
+    {
+        bytes memory data = getDataForTokenId(
+            tokenId,
+            bytes32(uint256(keccak256("DayGlimpseMetadata")))
+        );
+        (storageHash, profile, timestamp) = abi.decode(
+            data,
+            (bytes, address, uint256)
+        );
+        return (storageHash, profile, timestamp);
+    }
 }

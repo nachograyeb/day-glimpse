@@ -10,21 +10,18 @@ describe("DayGlimpse", function () {
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
+  let user3: HardhatEthersSigner;
   let users: HardhatEthersSigner[];
 
-  const EXPIRATION_TIME = 24 * 60 * 60; // 24 hours in seconds
   const testStorageHash = ethers.toUtf8Bytes("ipfs://QmTest123");
   const isPrivate = false;
 
   beforeEach(async function () {
-    // Get signers
-    [owner, user1, user2, ...users] = await ethers.getSigners();
+    [owner, user1, user2, user3, ...users] = await ethers.getSigners();
 
-    // Deploy mock NFT contract
     const MockNFTFactory = await ethers.getContractFactory("MockDayGlimpseNFT");
     mockNFTContract = await MockNFTFactory.deploy();
 
-    // Deploy contract
     const DayGlimpseFactory: ContractFactory = await ethers.getContractFactory("DayGlimpse");
     dayGlimpse = await DayGlimpseFactory.deploy();
   });
@@ -35,7 +32,6 @@ describe("DayGlimpse", function () {
 
       expect(await dayGlimpse.nftContractAddress()).to.equal(mockNFTContract.target);
 
-      // Check if an event was emitted
       const filter = dayGlimpse.filters.NFTContractSet;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
@@ -51,31 +47,26 @@ describe("DayGlimpse", function () {
 
   describe("setDayGlimpse", function () {
     it("Should set a new day glimpse", async function () {
-      // Set a day glimpse as user1
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
 
-      // Check if an event was emitted
       const filter = dayGlimpse.filters.DayGlimpseCreated;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
-      expect(events[0].args[0]).to.equal(user1.address); // profile address
+      expect(events[0].args[0]).to.equal(user1.address);
     });
 
     it("Should replace an existing day glimpse", async function () {
-      // Set initial day glimpse
+      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
 
-      // Set a new day glimpse (should replace the first one)
       const newStorageHash = ethers.toUtf8Bytes("ipfs://QmNewTest456");
       await dayGlimpse.connect(user1).setDayGlimpse(newStorageHash, true);
 
-      // Check if two events were emitted
       const filter = dayGlimpse.filters.DayGlimpseCreated;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(2);
 
-      // Get the glimpse and verify it's the new one
-      const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
+      const glimpse = await dayGlimpse.connect(user1).getDayGlimpse(user1.address);
       expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmNewTest456");
       expect(glimpse.isPrivate).to.equal(true);
     });
@@ -83,7 +74,7 @@ describe("DayGlimpse", function () {
 
   describe("getDayGlimpse", function () {
     beforeEach(async function () {
-      // Set a day glimpse as user1 for testing
+      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
     });
 
@@ -101,18 +92,56 @@ describe("DayGlimpse", function () {
     });
 
     it("Should fail when getting an expired day glimpse", async function () {
-      // Increase time by 25 hours (past expiration)
       await time.increase(25 * 60 * 60);
 
       await expect(
         dayGlimpse.connect(user2).getDayGlimpse(user1.address)
       ).to.be.revertedWith("DayGlimpse: Content has expired");
     });
+
+    it("Should allow profile owner to access their private glimpse", async function () {
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, true);
+
+      const glimpse = await dayGlimpse.connect(user1).getDayGlimpse(user1.address);
+      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmTest123");
+      expect(glimpse.isPrivate).to.equal(true);
+    });
+
+    it("Should prevent non-close friends from accessing private glimpses", async function () {
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, true);
+
+      await expect(
+        dayGlimpse.connect(user2).getDayGlimpse(user1.address)
+      ).to.be.revertedWith("DayGlimpse: This content is only available to close friends");
+    });
+
+    it("Should allow close friends to access private glimpses", async function () {
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, true);
+      await dayGlimpse.connect(user2).setDayGlimpse(testStorageHash, false);
+
+      const tokenId = ethers.keccak256(ethers.solidityPacked(
+        ["address", "address", "uint256"],
+        [user3.address, user1.address, Math.floor(Date.now() / 1000)]
+      ));
+
+      await mockNFTContract.setTokenIdsOf(user3.address, [tokenId]);
+
+      await mockNFTContract.setDayGlimpseDataForToken(
+        tokenId,
+        testStorageHash,
+        user1.address,
+        Math.floor(Date.now() / 1000)
+      );
+
+      // User3 should now be able to access user1's private glimpse as a close friend
+      const glimpse = await dayGlimpse.connect(user3).getDayGlimpse(user1.address);
+      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmTest123");
+      expect(glimpse.isPrivate).to.equal(true);
+    });
   });
 
   describe("markExpired", function () {
     beforeEach(async function () {
-      // Set a day glimpse as user1 for testing
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
     });
 
@@ -123,30 +152,24 @@ describe("DayGlimpse", function () {
     });
 
     it("Should mark as expired after 24 hours", async function () {
-      // Increase time by 25 hours (past expiration)
       await time.increase(25 * 60 * 60);
 
-      // Mark as expired
       await dayGlimpse.connect(user2).markExpired(user1.address);
 
-      // Verify an event was emitted
       const filter = dayGlimpse.filters.DayGlimpseExpired;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
       expect(events[0].args[0]).to.equal(user1.address);
 
-      // Verify glimpse is no longer active
       await expect(
         dayGlimpse.connect(user2).getDayGlimpse(user1.address)
       ).to.be.revertedWith("DayGlimpse: No active data for this profile");
     });
 
     it("Should fail to mark already inactive data as expired", async function () {
-      // Increase time and mark as expired
       await time.increase(25 * 60 * 60);
       await dayGlimpse.connect(user2).markExpired(user1.address);
 
-      // Try to mark it again
       await expect(
         dayGlimpse.connect(user2).markExpired(user1.address)
       ).to.be.revertedWith("DayGlimpse: No active data for this profile");
@@ -155,26 +178,22 @@ describe("DayGlimpse", function () {
 
   describe("deleteDayGlimpse", function () {
     beforeEach(async function () {
-      // Set a day glimpse as user1 for testing
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
     });
 
     it("Should allow owner to delete their day glimpse", async function () {
       await dayGlimpse.connect(user1).deleteDayGlimpse();
 
-      // Verify an event was emitted
       const filter = dayGlimpse.filters.DayGlimpseDeleted;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
 
-      // Verify glimpse is no longer active
       await expect(
         dayGlimpse.connect(user2).getDayGlimpse(user1.address)
       ).to.be.revertedWith("DayGlimpse: No active data for this profile");
     });
 
     it("Should fail when non-owner tries to delete", async function () {
-      // user2 tries to delete user1's glimpse
       await expect(
         dayGlimpse.connect(user2).deleteDayGlimpse()
       ).to.be.revertedWith("DayGlimpse: No active data to delete");
@@ -183,7 +202,6 @@ describe("DayGlimpse", function () {
 
   describe("isExpired", function () {
     beforeEach(async function () {
-      // Set a day glimpse as user1 for testing
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
     });
 
@@ -193,7 +211,6 @@ describe("DayGlimpse", function () {
     });
 
     it("Should return true when content is expired", async function () {
-      // Increase time by 25 hours (past expiration)
       await time.increase(25 * 60 * 60);
 
       const expired = await dayGlimpse.isExpired(user1.address);
@@ -201,7 +218,6 @@ describe("DayGlimpse", function () {
     });
 
     it("Should return false for inactive content", async function () {
-      // Delete the content
       await dayGlimpse.connect(user1).deleteDayGlimpse();
 
       const expired = await dayGlimpse.isExpired(user1.address);
@@ -211,19 +227,15 @@ describe("DayGlimpse", function () {
 
   describe("mintNFT", function () {
     beforeEach(async function () {
-      // Set a day glimpse as user1 for testing
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
 
-      // Set the NFT contract
       await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
     });
 
     it("Should fail to mint when NFT contract is not set", async function () {
-      // Deploy a new contract without setting the NFT contract
       const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
       const newDayGlimpse = await DayGlimpseFactory.deploy();
 
-      // Set a day glimpse
       await newDayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
       await expect(
@@ -240,10 +252,8 @@ describe("DayGlimpse", function () {
     });
 
     it("Should fail to mint when content is expired", async function () {
-      // Set a public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
-      // Increase time by 25 hours (past expiration)
       await time.increase(25 * 60 * 60);
 
       await expect(
@@ -252,27 +262,95 @@ describe("DayGlimpse", function () {
     });
 
     it("Should mint NFT successfully", async function () {
-      // Set a public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
-      // Mock the NFT contract to return a tokenId
       const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
       await mockNFTContract.setMockTokenId(mockTokenId);
 
-      // Mint NFT
       const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x");
 
-      // Check if token was minted correctly
       expect(await mockNFTContract.lastMinter()).to.equal(user2.address);
       expect(await mockNFTContract.lastProfile()).to.equal(user1.address);
 
-      // Verify an event was emitted
       const filter = dayGlimpse.filters.DayGlimpseNFTMinted;
       const events = await dayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
-      expect(events[0].args[0]).to.equal(user2.address); // minter
-      expect(events[0].args[1]).to.equal(user1.address); // profile
-      expect(events[0].args[3]).to.equal(mockTokenId); // tokenId
+      expect(events[0].args[0]).to.equal(user2.address);
+      expect(events[0].args[1]).to.equal(user1.address);
+      expect(events[0].args[3]).to.equal(mockTokenId);
+    });
+  });
+
+  describe("Close friend functionality", function () {
+    beforeEach(async function () {
+      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+    });
+
+    it("Should establish close friend relationship after minting NFT", async function () {
+      const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
+
+      await mockNFTContract.setMockTokenId(mockTokenId);
+
+      await dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x");
+
+      await mockNFTContract.setTokenIdsOf(user2.address, [mockTokenId]);
+
+      await mockNFTContract.setDayGlimpseDataForToken(
+        mockTokenId,
+        testStorageHash,
+        user1.address,
+        Math.floor(Date.now() / 1000)
+      );
+
+      await dayGlimpse.connect(user1).setDayGlimpse(
+        ethers.toUtf8Bytes("ipfs://QmPrivateContent"),
+        true
+      );
+
+      // User2 should be able to access user1's private glimpse as a close friend
+      const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
+      expect(glimpse.isPrivate).to.equal(true);
+      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmPrivateContent");
+    });
+
+    it("Should check all NFTs for close friend relationship", async function () {
+      const tokenId1 = ethers.keccak256(ethers.toUtf8Bytes("tokenId1"));
+      const tokenId2 = ethers.keccak256(ethers.toUtf8Bytes("tokenId2"));
+      const tokenId3 = ethers.keccak256(ethers.toUtf8Bytes("tokenId3"));
+
+      await mockNFTContract.setTokenIdsOf(user2.address, [tokenId1, tokenId2, tokenId3]);
+
+      await mockNFTContract.setDayGlimpseDataForToken(
+        tokenId1,
+        testStorageHash,
+        user3.address,
+        Math.floor(Date.now() / 1000)
+      );
+
+      await mockNFTContract.setDayGlimpseDataForToken(
+        tokenId2,
+        testStorageHash,
+        user1.address,
+        Math.floor(Date.now() / 1000)
+      );
+
+      await mockNFTContract.setDayGlimpseDataForToken(
+        tokenId3,
+        testStorageHash,
+        owner.address,
+        Math.floor(Date.now() / 1000)
+      );
+
+      await dayGlimpse.connect(user1).setDayGlimpse(
+        ethers.toUtf8Bytes("ipfs://QmPrivateContent"),
+        true
+      );
+
+      // User2 should be able to access user1's private glimpse since one of their tokens is from user1
+      const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
+      expect(glimpse.isPrivate).to.equal(true);
+      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmPrivateContent");
     });
   });
 });
