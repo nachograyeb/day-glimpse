@@ -12,6 +12,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [image, setImage] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
 
   const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired } = useDayGlimpse();
 
@@ -39,6 +40,9 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
         return;
       }
 
+      // Set the privacy status based on blockchain data
+      setIsPrivate(dayGlimpseData.isPrivate);
+
       const response = await fetch(`/api/images/get?imageId=${dayGlimpseData.storageHash}`);
 
       if (response.ok) {
@@ -56,7 +60,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     }
   };
 
-  const uploadImage = async (file: File) => {
+  const uploadImage = async (file: File, isPrivateUpload: boolean = false) => {
     if (!isOwner) {
       setError('Only the owner can upload images');
       return;
@@ -96,9 +100,10 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
 
       const data = await response.json();
       setImage(data?.url);
+      setIsPrivate(isPrivateUpload);
 
       if (data?.url && data?.id) {
-        await setDayGlimpse(data.id, false);
+        await setDayGlimpse(data.id, isPrivateUpload);
       }
 
       return data?.url;
@@ -136,6 +141,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       }
 
       setImage(null);
+      setIsPrivate(false);
     } catch (err: any) {
       console.error('Error deleting image:', err);
       setError(err.message || 'Failed to delete image. Please try again.');
@@ -148,6 +154,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     image,
     error,
     isLoading,
+    isPrivate,
     uploadImage,
     deleteImage,
     setError,

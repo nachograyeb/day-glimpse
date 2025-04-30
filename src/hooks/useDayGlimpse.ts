@@ -1,7 +1,7 @@
 import { useProfile } from "@/contexts/ProfileContext";
 import * as DayGlimpse from "../../artifacts/contracts/DayGlimpse.sol/DayGlimpse.json";
 
-const dayGlimpseAddress = "0x6C600d10284D51fFE096Ee89FE76b24039A6f8dA"; // 24-hour stories
+const dayGlimpseAddress = "0x3De1D1b6dfE28641e90Ea8A30e0463731e2D6D18"; // 24-hour stories
 // const dayGlimpseAddress = "0x66BBE91Fd032B96c40aeB4c71b367c9829B66FE4"; //1-minute stories
 const abi = DayGlimpse.abi;
 

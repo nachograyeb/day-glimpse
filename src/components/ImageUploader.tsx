@@ -9,7 +9,8 @@ interface ImageUploaderProps {
   image: string | null;
   error: string;
   isLoading: boolean;
-  onUpload: (file: File) => Promise<void>;
+  isPrivate?: boolean;
+  onUpload: (file: File, isPrivate: boolean) => Promise<void>;
   onDelete: () => Promise<void>;
   onImageLoad?: (loaded: boolean) => void;
 }
@@ -19,12 +20,18 @@ export const ImageUploader = ({
   image,
   error,
   isLoading,
+  isPrivate = false,
   onUpload,
   onDelete,
   onImageLoad
 }: ImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [privacyToggle, setPrivacyToggle] = useState(isPrivate);
+
+  useEffect(() => {
+    setPrivacyToggle(isPrivate);
+  }, [isPrivate]);
 
   useEffect(() => {
     if (onImageLoad) {
@@ -43,7 +50,7 @@ export const ImageUploader = ({
 
     try {
       setImageLoaded(false);
-      await onUpload(file);
+      await onUpload(file, privacyToggle);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -61,6 +68,10 @@ export const ImageUploader = ({
 
   const handleImageLoad = () => {
     setImageLoaded(true);
+  };
+
+  const handlePrivacyToggle = () => {
+    setPrivacyToggle(!privacyToggle);
   };
 
   useEffect(() => {
@@ -93,6 +104,11 @@ export const ImageUploader = ({
               <span className={styles.deleteIcon}>🗑️</span> Delete Image
             </button>
           )}
+          {imageLoaded && isPrivate && (
+            <div className={styles.privacyTag}>
+              <span className={styles.privacyIcon}>🔒</span> Private
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -107,6 +123,19 @@ export const ImageUploader = ({
                 ? 'Click to upload an image'
                 : 'No image has been uploaded by the profile owner'}
             </div>
+            {isOwner && (
+              <div className={styles.privacyToggleContainer}>
+                <label className={styles.privacyToggle}>
+                  <input
+                    type="checkbox"
+                    checked={privacyToggle}
+                    onChange={handlePrivacyToggle}
+                    className={styles.privacyCheckbox}
+                  />
+                  <span>{privacyToggle ? '🔒 Private' : '🌐 Public'}</span>
+                </label>
+              </div>
+            )}
           </div>
           <input
             type="file"
