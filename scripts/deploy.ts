@@ -1,4 +1,6 @@
 import { ethers } from "hardhat";
+const NFT_NAME = "DayGlimpse NFT";
+const NFT_SYMBOL = "DGNFT";
 
 async function main() {
   const [owner] = await ethers.getSigners();
@@ -8,18 +10,15 @@ async function main() {
   const dayGlimpse = await DayGlimpse.deploy();
   const dayGlimpseAddress = await dayGlimpse.getAddress();
   await dayGlimpse.waitForDeployment();
+  console.log("DayGlimpse deployed to:", dayGlimpseAddress);
 
-  await dayGlimpse.connect(owner).setDayGlimpse(
-    '0xc26fbfb43a5a67dcd83d84864749e6c20a0f89a0878ad7ce26f9f1b630a7f45c',
-    Date.now(),
-    false,
-  );
+  const DayGlimpseNFT = await ethers.getContractFactory("DayGlimpseNFT");
+  const dayGlimpseNFT = await DayGlimpseNFT.deploy(NFT_NAME, NFT_SYMBOL, ownerAddress, dayGlimpseAddress);
+  const dayGlimpseNFTAddress = await dayGlimpseNFT.getAddress();
+  await dayGlimpseNFT.waitForDeployment();
+  console.log("DayGlimpseNFT deployed to:", dayGlimpseNFTAddress);
 
-  const myDayGlimpse = await dayGlimpse.getDayGlimpse(
-    ownerAddress,
-  );
-
-  console.log(myDayGlimpse.storageHash);
+  await dayGlimpse.setNFTContract(dayGlimpseNFTAddress);
 }
 
 main()
