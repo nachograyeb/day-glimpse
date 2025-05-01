@@ -117,22 +117,34 @@
   display: none;
 }
 
+/* Updated loading container to match upload area dimensions and positioning */
 .loadingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  width: 80%;
+  max-width: 600px;
+  height: 300px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  margin: 2rem 0;
 }
 
 .loadingSpinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   border-top: 4px solid white;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.loadingContainer p {
+  font-size: 1.2rem;
+  margin: 0;
+  opacity: 0.9;
 }
 
 @keyframes spin {
