@@ -51,7 +51,7 @@ const DayGlimpseLogo = ({
         </div>
       </div>
 
-      {/* Reduced spacer height */}
+      {/* Spacer to replace the fixed logo in document flow */}
       {fixedPosition && <div className="logo-spacer"></div>}
 
       <style jsx>{`
@@ -66,7 +66,7 @@ const DayGlimpseLogo = ({
         
         .fixed-logo-container {
           position: fixed;
-          top: 1rem; /* Reduced from 1.5rem */
+          top: 4.5rem; /* Increased to move logo down */
           left: 0;
           right: 0;
           width: 100%;
@@ -77,7 +77,7 @@ const DayGlimpseLogo = ({
         
         .logo-spacer {
           width: 100%;
-          height: 100px; /* Reduced from 150px */
+          height: 140px; /* Adjusted to match the new position */
         }
 
         .logo-content {
