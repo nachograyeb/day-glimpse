@@ -47,6 +47,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
 
       if (response.ok) {
         const url = await response.json();
+        console.log(`Image URL: ${url}`);
         setImage(url);
       } else {
         console.log(`No image found on the server for ${address}`);
@@ -104,6 +105,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
 
       if (data?.url && data?.id) {
         await setDayGlimpse(data.id, isPrivateUpload);
+        console.log('Image uploaded, url:', data.url);
       }
 
       return data?.url;
