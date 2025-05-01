@@ -15,6 +15,7 @@ export const ProfilePage = () => {
     image,
     error,
     isLoading,
+    isPrivate,
     uploadImage,
     deleteImage
   } = useProfileImage({
@@ -35,12 +36,13 @@ export const ProfilePage = () => {
           image={image}
           error={error}
           isLoading={isLoading}
+          isPrivate={isPrivate}
           onUpload={uploadImage}
           onDelete={deleteImage}
           onImageLoad={handleImageLoadChange}
         />
 
-        {!isOwner && image && profileAddress && (
+        {!isOwner && image && profileAddress && !isPrivate && (
           <ClaimNFTButton
             imageUrl={image}
             profileAddress={profileAddress}

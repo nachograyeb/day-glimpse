@@ -3,6 +3,54 @@
 import { useRef, useState, useEffect } from 'react';
 import styles from './ImageUploader.module.css';
 
+const PrivacyModal = ({
+  isOpen,
+  onClose,
+  onSelect
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (isPrivate: boolean) => void;
+}) => {
+  if (!isOpen) return null;
+
+  const handlePublicSelect = () => {
+    onSelect(false);
+    onClose();
+  };
+
+  const handleExclusiveSelect = () => {
+    onSelect(true);
+    onClose();
+  };
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 className={styles.modalTitle}>Choose Visibility</h3>
+
+        <div className={styles.optionsContainer}>
+          <div className={styles.optionCard} onClick={handlePublicSelect}>
+            <div className={styles.optionIcon}>🌐</div>
+            <h4 className={styles.optionTitle}>Public</h4>
+            <p className={styles.optionDescription}>Anyone can view your DayGlimpse</p>
+          </div>
+
+          <div className={styles.optionCard} onClick={handleExclusiveSelect}>
+            <div className={styles.optionIcon}>🔒</div>
+            <h4 className={styles.optionTitle}>Exclusive</h4>
+            <p className={styles.optionDescription}>Only users that hold at least one of your previous DayGlimpse NFTs can view it</p>
+          </div>
+        </div>
+
+        <button className={styles.modalCloseButton} onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
 interface ImageUploaderProps {
   isOwner: boolean;
   profileAddress: string | null;
@@ -27,11 +75,8 @@ export const ImageUploader = ({
 }: ImageUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [privacyToggle, setPrivacyToggle] = useState(isPrivate);
-
-  useEffect(() => {
-    setPrivacyToggle(isPrivate);
-  }, [isPrivate]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPrivacy, setSelectedPrivacy] = useState(false);
 
   useEffect(() => {
     if (onImageLoad) {
@@ -41,6 +86,13 @@ export const ImageUploader = ({
 
   const handleUploadClick = () => {
     if (!isOwner) return;
+    // Open modal instead of file picker directly
+    setIsModalOpen(true);
+  };
+
+  const handlePrivacySelect = (isPrivate: boolean) => {
+    setSelectedPrivacy(isPrivate);
+    // Open file picker after selecting privacy
     fileInputRef.current?.click();
   };
 
@@ -50,7 +102,7 @@ export const ImageUploader = ({
 
     try {
       setImageLoaded(false);
-      await onUpload(file, privacyToggle);
+      await onUpload(file, selectedPrivacy);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -68,10 +120,6 @@ export const ImageUploader = ({
 
   const handleImageLoad = () => {
     setImageLoaded(true);
-  };
-
-  const handlePrivacyToggle = () => {
-    setPrivacyToggle(!privacyToggle);
   };
 
   useEffect(() => {
@@ -106,7 +154,7 @@ export const ImageUploader = ({
           )}
           {imageLoaded && isPrivate && (
             <div className={styles.privacyTag}>
-              <span className={styles.privacyIcon}>🔒</span> Private
+              <span className={styles.privacyIcon}>🔒</span> Exclusive
             </div>
           )}
         </div>
@@ -123,19 +171,6 @@ export const ImageUploader = ({
                 ? 'Click to upload an image'
                 : 'No image has been uploaded by the profile owner'}
             </div>
-            {isOwner && (
-              <div className={styles.privacyToggleContainer}>
-                <label className={styles.privacyToggle}>
-                  <input
-                    type="checkbox"
-                    checked={privacyToggle}
-                    onChange={handlePrivacyToggle}
-                    className={styles.privacyCheckbox}
-                  />
-                  <span>{privacyToggle ? '🔒 Private' : '🌐 Public'}</span>
-                </label>
-              </div>
-            )}
           </div>
           <input
             type="file"
@@ -144,6 +179,13 @@ export const ImageUploader = ({
             accept="image/*"
             className={styles.hidden}
             disabled={!isOwner}
+          />
+
+          {/* Privacy selection modal */}
+          <PrivacyModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSelect={handlePrivacySelect}
           />
         </>
       )}
