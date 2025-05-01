@@ -5,7 +5,7 @@ const dayGlimpseAddress = process.env.NEXT_PUBLIC_DAYGLIMPSE_ADDRESS as string;
 const abi = contractData.abi;
 
 export const useDayGlimpse = () => {
-  const { callContract, sendTransaction, sendAppTransaction: sendTransactionDirectProvider, walletConnected } = useProfile();
+  const { callContract, sendTransaction, sendAppTransaction, sendTransactionLowLevel, walletConnected } = useProfile();
 
   const getDayGlimpse = async (profileAddress: string) => {
     try {
@@ -27,7 +27,7 @@ export const useDayGlimpse = () => {
 
   const markExpired = async (profileAddress: string) => {
     if (!walletConnected) throw new Error("Wallet not connected");
-    return await sendTransactionDirectProvider(dayGlimpseAddress, abi, "markExpired", [profileAddress]);
+    return await sendAppTransaction(dayGlimpseAddress, abi, "markExpired", [profileAddress]);
   };
 
   const setDayGlimpse = async (storageHash: string, isPrivate: boolean) => {
@@ -37,18 +37,18 @@ export const useDayGlimpse = () => {
       isPrivate,
     ];
 
-    return await sendTransaction(dayGlimpseAddress, abi, "setDayGlimpse", args);
+    return await sendTransactionLowLevel(dayGlimpseAddress, abi, "setDayGlimpse", args);
   };
 
   const deleteDayGlimpse = async () => {
     if (!walletConnected) throw new Error("Wallet not connected");
-    return await sendTransaction(dayGlimpseAddress, abi, "deleteDayGlimpse", []);
+    return await sendTransactionLowLevel(dayGlimpseAddress, abi, "deleteDayGlimpse", []);
   };
 
   const mintNFT = async (profileAddress: string) => {
     if (!walletConnected) throw new Error("Wallet not connected");
     try {
-      return await sendTransaction(dayGlimpseAddress, abi, "mintNFT", [profileAddress, false, '0x']);
+      return await sendTransactionLowLevel(dayGlimpseAddress, abi, "mintNFT", [profileAddress, false, '0x']);
     } catch (error) {
       console.log(error);
       throw new Error("Either you already minted this NFT or an unknown error occurred");

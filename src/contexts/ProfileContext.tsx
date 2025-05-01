@@ -17,7 +17,14 @@ interface ProfileContextType {
   signer: ethers.JsonRpcSigner | null;
   callContract: (contractAddress: string, abi: any[], method: string, args: any[]) => Promise<any>;
   sendTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionResponse>;
-  sendAppTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<any>; // Updated to work with API
+  sendAppTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<any>;
+  sendTransactionLowLevel: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionReceipt>;
+}
+
+interface EnhancedTransactionResponse extends ethers.TransactionResponse {
+  waitForConfirmation: (confirmations?: number, timeoutSeconds?: number) => Promise<ethers.TransactionReceipt>;
+  getReceipt: (timeoutSeconds?: number) => Promise<ethers.TransactionReceipt>;
+  isPending: () => Promise<boolean>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -53,13 +60,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        // Setup the UP provider for the user
         const _provider = createClientUPProvider()
         const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider)
         setProvider(_provider)
         setBrowserProvider(_browserProvider)
 
-        // Setup the direct provider for read-only operations
         const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
         setDirectProvider(_directProvider);
 
@@ -136,11 +141,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     try {
       const contract = new ethers.Contract(contractAddress, abi, signer);
-
-      // Encode the function call
       const data = contract.interface.encodeFunctionData(method, args);
 
-      // Make the call through the UP provider with explicit from address
       const response = await provider.request({
         method: 'eth_call',
         params: [
@@ -153,7 +155,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         ]
       });
 
-      // Handle the case where we get a full JSON-RPC response object
       let result;
       if (typeof response === 'object' && response !== null && 'result' in response) {
         result = response.result;
@@ -161,12 +162,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         result = response;
       }
 
-      // Check for empty result
       if (result === '0x') {
         throw new Error(`Call to ${method} returned empty result`);
       }
 
-      // Decode the result
       const decodedResult = contract.interface.decodeFunctionResult(method, result);
       return decodedResult.length === 1 ? decodedResult[0] : decodedResult;
     } catch (error) {
@@ -184,7 +183,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const sendAppTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
     try {
-      // Call the server-side API endpoint
       const response = await fetch('/api/app-transaction', {
         method: 'POST',
         headers: {
@@ -195,7 +193,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           methodName: method,
           args,
           options,
-          abi: abi, // Be careful with sending ABI in every request - consider alternatives for production
+          abi: abi, // TODO: avoid sending the entire ABI in the request
         }),
       });
 
@@ -213,6 +211,133 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const sendTransactionLowLevel = useCallback(async (
+    contractAddress: string,
+    abi: any[],
+    method: string,
+    args: any[],
+    options = {}
+  ): Promise<ethers.TransactionReceipt> => {
+    if (!signer) throw new Error('No signer available');
+    if (!directProvider) throw new Error('No direct provider available');
+    if (!provider) throw new Error('No UP provider available');
+    if (!accounts[0]) throw new Error('No account available');
+
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+    console.log('User contract interaction:', method);
+
+    try {
+      const data = contract.interface.encodeFunctionData(method, args);
+
+      const txParams = {
+        from: accounts[0],
+        to: contractAddress,
+        data,
+        ...options,
+      };
+
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [txParams]
+      });
+
+      console.log('Transaction sent via low-level call:', txHash);
+
+      const partialTx = {
+        hash: txHash,
+        confirmations: 0,
+        from: accounts[0],
+        to: contractAddress,
+        data,
+        wait: async () => { throw new Error('Native wait() not supported for Relayer transactions'); }
+      } as unknown as ethers.TransactionResponse;
+
+      const enhancedTx = enhanceTransaction(partialTx);
+
+      return await enhancedTx.getReceipt();
+    } catch (error) {
+      console.error('All transaction submission methods failed:', error);
+      throw error;
+    }
+
+    function enhanceTransaction(tx: ethers.TransactionResponse): EnhancedTransactionResponse {
+      const enhancedTx = tx as EnhancedTransactionResponse;
+
+      enhancedTx.waitForConfirmation = async (confirmations = 1, timeoutSeconds = 180) => {
+        console.log(`Waiting for ${confirmations} confirmation(s) for tx: ${tx.hash}`);
+
+        return new Promise<ethers.TransactionReceipt>((resolve, reject) => {
+          const startTime = Date.now();
+
+          const checkReceipt = async () => {
+            try {
+              const receipt = await directProvider?.getTransactionReceipt(tx.hash);
+
+              if (receipt) {
+                if (await receipt.confirmations() >= confirmations) {
+                  console.log(`Transaction confirmed with ${receipt.confirmations} confirmation(s)`);
+                  clearInterval(intervalId);
+                  resolve(receipt);
+                  return;
+                }
+                console.log(`Got receipt but only ${receipt.confirmations} confirmation(s) so far`);
+              }
+
+              if ((Date.now() - startTime) > timeoutSeconds * 1000) {
+                clearInterval(intervalId);
+                reject(new Error(`Transaction confirmation timed out after ${timeoutSeconds} seconds`));
+              }
+            } catch (error) {
+              console.error("Error checking transaction receipt:", error);
+              // Don't reject here, just log and continue polling
+            }
+          };
+
+          // Start polling
+          const intervalId = setInterval(checkReceipt, 2000); // Check every 2 seconds
+
+          checkReceipt();
+        });
+      };
+
+      enhancedTx.getReceipt = async (timeoutSeconds = 180) => {
+        console.log(`Waiting for receipt for tx: ${tx.hash}`);
+
+        return new Promise<ethers.TransactionReceipt>((resolve, reject) => {
+          const startTime = Date.now();
+
+          const checkReceipt = async () => {
+            try {
+              const receipt = await directProvider?.getTransactionReceipt(tx.hash);
+
+              if (receipt) {
+                console.log(`Got transaction receipt for ${tx.hash}`);
+                clearInterval(intervalId);
+                resolve(receipt);
+                return;
+              }
+
+              if ((Date.now() - startTime) > timeoutSeconds * 1000) {
+                clearInterval(intervalId);
+                reject(new Error(`Transaction receipt fetch timed out after ${timeoutSeconds} seconds`));
+              }
+            } catch (error) {
+              console.error("Error checking transaction receipt:", error);
+              // Don't reject here, just log and continue polling
+            }
+          };
+
+          // Start polling
+          const intervalId = setInterval(checkReceipt, 2000); // Check every 2 seconds
+
+          checkReceipt();
+        });
+      };
+
+      return enhancedTx;
+    }
+  }, [signer, directProvider, provider, accounts]);
+
   return (
     <ProfileContext.Provider value={{
       chainId,
@@ -227,7 +352,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       signer,
       callContract,
       sendTransaction,
-      sendAppTransaction
+      sendAppTransaction,
+      sendTransactionLowLevel,
     }}>
       {children}
     </ProfileContext.Provider>
