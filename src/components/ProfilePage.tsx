@@ -5,6 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useProfileImage } from '@/hooks/useProfileImage';
 import { ImageUploader } from './ImageUploader';
 import { ClaimNFTButton } from './nft/ClaimNFTButton';
+import DayGlimpseLogo from './DayGlimpseLogo';
 import styles from './ProfilePage.module.css';
 
 export const ProfilePage = () => {
@@ -29,6 +30,14 @@ export const ProfilePage = () => {
 
   return (
     <div className={styles.container}>
+      {/* Logo with fixed position at the top */}
+      <DayGlimpseLogo
+        size="large"
+        animated={true}
+        showSubtitle={true}
+        fixedPosition={true} // Enable fixed positioning
+      />
+
       <div className={styles.imageContainer}>
         <ImageUploader
           isOwner={isOwner}

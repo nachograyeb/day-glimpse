@@ -1,10 +1,20 @@
+/* ProfilePage.module.css */
+
 .container {
   width: 100%;
   max-width: 800px;
   padding: 1rem;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.logoWrapper {
+  width: 100%;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
 }
 
 .imageContainer {
@@ -14,15 +24,4 @@
   justify-content: center;
   flex-direction: column;
   align-items: center;
-}
-
-.privateContentMessage {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  background-color: rgba(255, 165, 0, 0.2);
-  border-radius: 8px;
-  text-align: center;
-  color: white;
-  width: 100%;
-  max-width: 500px;
 }
