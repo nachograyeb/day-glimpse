@@ -15,11 +15,12 @@ interface ProfileContextType {
   isOwner: boolean;
   profileAddress: string | null;
   signer: ethers.JsonRpcSigner | null;
-  isLoading: boolean; // New loading state
+  isLoading: boolean;
   callContract: (contractAddress: string, abi: any[], method: string, args: any[]) => Promise<any>;
   sendTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionResponse>;
   sendAppTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<any>;
   sendTransactionLowLevel: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionReceipt>;
+  reconnect: () => Promise<void>; // New function to handle reconnection
 }
 
 interface EnhancedTransactionResponse extends ethers.TransactionResponse {
@@ -42,65 +43,92 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profileAddress, setProfileAddress] = useState<string | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
   const [directProvider, setDirectProvider] = useState<ethers.JsonRpcProvider | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state, default to true
+  const [isLoading, setIsLoading] = useState(true);
 
   // Use refs to store the latest values without triggering re-renders
   const accountsRef = useRef<Array<`0x${string}`>>(accounts);
   const contextAccountsRef = useRef<Array<`0x${string}`>>(contextAccounts);
   const chainIdRef = useRef<number>(chainId);
+  const providerRef = useRef<any>(provider);
+  const browserProviderRef = useRef<ethers.BrowserProvider | null>(browserProvider);
 
-  useEffect(() => {
-    accountsRef.current = accounts;
-  }, [accounts]);
+  // Update refs when values change
+  useEffect(() => { accountsRef.current = accounts; }, [accounts]);
+  useEffect(() => { contextAccountsRef.current = contextAccounts; }, [contextAccounts]);
+  useEffect(() => { chainIdRef.current = chainId; }, [chainId]);
+  useEffect(() => { providerRef.current = provider; }, [provider]);
+  useEffect(() => { browserProviderRef.current = browserProvider; }, [browserProvider]);
 
-  useEffect(() => {
-    contextAccountsRef.current = contextAccounts;
-  }, [contextAccounts]);
+  // Create a function to initialize providers
+  const initializeProviders = useCallback(async () => {
+    if (typeof window === 'undefined') return;
 
-  useEffect(() => {
-    chainIdRef.current = chainId;
-  }, [chainId]);
+    try {
+      const _provider = createClientUPProvider();
+      const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider);
+      setProvider(_provider);
+      setBrowserProvider(_browserProvider);
 
-  const updateConnected = useCallback((accs: Array<`0x${string}`>, ctxAccs: Array<`0x${string}`>, chId: number) => {
-    const isConnected = accs.length > 0 && ctxAccs.length > 0;
-    setWalletConnected(isConnected);
+      const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+      setDirectProvider(_directProvider);
 
-    if (ctxAccs.length > 0) {
-      setProfileAddress(ctxAccs[0]);
-    }
-
-    if (accs.length > 0 && ctxAccs.length > 0) {
-      const ownerStatus = accs[0].toLowerCase() === ctxAccs[0].toLowerCase();
-      setIsOwner(ownerStatus);
-    } else {
-      setIsOwner(false);
-    }
-
-    // Only set loading to false after we have account information
-    if (isConnected || (!isConnected && provider !== null)) {
-      setIsLoading(false);
-    }
-  }, [provider]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const _provider = createClientUPProvider();
-        const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider);
-        setProvider(_provider);
-        setBrowserProvider(_browserProvider);
-
-        const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
-        setDirectProvider(_directProvider);
-
-        const parentProfileAddress = localStorage.getItem('parentProfileAddress');
-        if (parentProfileAddress) {
-          console.log('Found stored parent profile address:', parentProfileAddress);
-        }
-      } catch (err) {
-        console.error('Failed to create provider:', err);
-        setIsLoading(false); // Set loading to false if we fail to create provider
+      const parentProfileAddress = localStorage.getItem('parentProfileAddress');
+      if (parentProfileAddress) {
+        console.log('Found stored parent profile address:', parentProfileAddress);
       }
+
+      return { provider: _provider, browserProvider: _browserProvider };
+    } catch (err) {
+      console.error('Failed to create provider:', err);
+      setIsLoading(false);
+      return null;
+    }
+  }, []);
+
+  // Initialize on mount
+  useEffect(() => {
+    initializeProviders();
+  }, [initializeProviders]);
+
+  const updateConnected = useCallback(async (accs: Array<`0x${string}`>, ctxAccs: Array<`0x${string}`>, chId: number, currentBrowserProvider: ethers.BrowserProvider | null) => {
+    const isConnected = accs.length > 0 && ctxAccs.length > 0;
+
+    try {
+      // Only update signer if we have connections and a browser provider
+      if (isConnected && currentBrowserProvider) {
+        try {
+          const _signer = await currentBrowserProvider.getSigner();
+          setSigner(_signer);
+
+          // Verify signer is working with a simple call
+          await _signer.provider.getNetwork();
+
+          setWalletConnected(true);
+
+          if (ctxAccs.length > 0) {
+            setProfileAddress(ctxAccs[0]);
+          }
+
+          if (accs.length > 0 && ctxAccs.length > 0) {
+            const ownerStatus = accs[0].toLowerCase() === ctxAccs[0].toLowerCase();
+            setIsOwner(ownerStatus);
+          } else {
+            setIsOwner(false);
+          }
+        } catch (signerError) {
+          console.error('Signer not ready or available:', signerError);
+          setWalletConnected(false);
+        }
+      } else {
+        setWalletConnected(false);
+        setIsOwner(false);
+      }
+    } catch (error) {
+      console.error('Error in updateConnected:', error);
+      setWalletConnected(false);
+    } finally {
+      // Always set loading to false after attempt to connect
+      setIsLoading(false);
     }
   }, []);
 
@@ -123,10 +151,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const _contextAccounts = provider.contextAccounts;
         setContextAccounts(_contextAccounts);
 
-        updateConnected(_accounts, _contextAccounts, _chainId);
+        await updateConnected(_accounts, _contextAccounts, _chainId, browserProvider);
       } catch (error) {
-        console.log(error);
-        setIsLoading(false); // Set loading to false if we encounter an error
+        console.log('Error in init:', error);
+        setIsLoading(false);
       }
     }
 
@@ -136,25 +164,25 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!provider) return;
 
-    const handleAccountsChanged = (_accounts: Array<`0x${string}`>) => {
+    const handleAccountsChanged = async (_accounts: Array<`0x${string}`>) => {
       if (JSON.stringify(_accounts) !== JSON.stringify(accountsRef.current)) {
         setAccounts(_accounts);
-        updateConnected(_accounts, contextAccountsRef.current, chainIdRef.current);
+        await updateConnected(_accounts, contextAccountsRef.current, chainIdRef.current, browserProviderRef.current);
       }
     };
 
-    const handleContextAccountsChanged = (_accounts: Array<`0x${string}`>) => {
+    const handleContextAccountsChanged = async (_accounts: Array<`0x${string}`>) => {
       if (JSON.stringify(_accounts) !== JSON.stringify(contextAccountsRef.current)) {
         setContextAccounts(_accounts);
-        updateConnected(accountsRef.current, _accounts, chainIdRef.current);
+        await updateConnected(accountsRef.current, _accounts, chainIdRef.current, browserProviderRef.current);
       }
     };
 
-    const handleChainChanged = (_chainId: string | number) => {
+    const handleChainChanged = async (_chainId: string | number) => {
       const chainIdNumber = typeof _chainId === 'string' ? parseInt(_chainId, 16) : _chainId;
       if (chainIdNumber !== chainIdRef.current) {
         setChainId(chainIdNumber);
-        updateConnected(accountsRef.current, contextAccountsRef.current, chainIdNumber);
+        await updateConnected(accountsRef.current, contextAccountsRef.current, chainIdNumber, browserProviderRef.current);
       }
     };
 
@@ -174,6 +202,45 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
     };
   }, [provider, updateConnected]);
+
+  // Add a function to handle reconnection
+  const reconnect = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const providers = await initializeProviders();
+
+      if (!providers) {
+        throw new Error('Failed to initialize providers');
+      }
+
+      const { provider: newProvider, browserProvider: newBrowserProvider } = providers;
+
+      const network = await newBrowserProvider.getNetwork();
+      const _chainId = Number(network.chainId);
+      setChainId(_chainId);
+
+      try {
+        const _signer = await newBrowserProvider.getSigner();
+        setSigner(_signer);
+
+        const _accounts = [await _signer.getAddress()] as Array<`0x${string}`>;
+        setAccounts(_accounts);
+
+        const _contextAccounts = newProvider.contextAccounts;
+        setContextAccounts(_contextAccounts);
+
+        await updateConnected(_accounts, _contextAccounts, _chainId, newBrowserProvider);
+      } catch (error) {
+        console.error('Error getting signer during reconnect:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+      setIsLoading(false);
+      setWalletConnected(false);
+    }
+  }, [initializeProviders, updateConnected]);
 
   const callContract = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[]) => {
     if (!provider || !accounts[0]) throw new Error('No provider or profile address available');
@@ -215,11 +282,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [provider, accounts, signer]);
 
   const sendTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
-    if (!signer) throw new Error('No signer available');
+    if (!signer) {
+      // If signer is not available, try to reconnect
+      await reconnect();
+      if (!signer) throw new Error('No signer available');
+    }
+
     const contract = new ethers.Contract(contractAddress, abi, signer);
     console.log('User contract interaction:', method);
     return await contract[method](...args, options);
-  }, [signer]);
+  }, [signer, reconnect]);
 
   const sendAppTransaction = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[], options = {}) => {
     try {
@@ -233,7 +305,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           methodName: method,
           args,
           options,
-          abi: abi, // TODO: avoid sending the entire ABI in the request
+          abi: abi,
         }),
       });
 
@@ -258,7 +330,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     args: any[],
     options = {}
   ): Promise<ethers.TransactionReceipt> => {
-    if (!signer) throw new Error('No signer available');
+    if (!signer) {
+      // If signer is not available, try to reconnect
+      await reconnect();
+      if (!signer) throw new Error('No signer available');
+    }
+
     if (!directProvider) throw new Error('No direct provider available');
     if (!provider) throw new Error('No UP provider available');
     if (!accounts[0]) throw new Error('No account available');
@@ -386,7 +463,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       return enhancedTx;
     }
-  }, [signer, directProvider, provider, accounts]);
+  }, [signer, directProvider, provider, accounts, reconnect]);
 
   return (
     <ProfileContext.Provider value={{
@@ -405,6 +482,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       sendTransaction,
       sendAppTransaction,
       sendTransactionLowLevel,
+      reconnect,
     }}>
       {children}
     </ProfileContext.Provider>

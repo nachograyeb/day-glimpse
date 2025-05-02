@@ -9,9 +9,18 @@ import DayGlimpseLogo from './DayGlimpseLogo';
 import styles from './ProfilePage.module.css';
 
 export const ProfilePage = () => {
-  const { isOwner, profileAddress, isLoading: profileLoading } = useProfile();
+  const {
+    isOwner,
+    profileAddress,
+    isLoading: profileLoading,
+    walletConnected,
+    signer,
+    reconnect
+  } = useProfile();
+
   const [imageLoaded, setImageLoaded] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [attemptedReconnect, setAttemptedReconnect] = useState(false);
 
   const {
     image,
@@ -26,6 +35,22 @@ export const ProfilePage = () => {
     profileAddress,
     isOwner
   });
+
+  // Effect to handle reconnection if wallet is connected but signer is missing
+  useEffect(() => {
+    const handleReconnection = async () => {
+      if (walletConnected && !signer && !attemptedReconnect) {
+        setAttemptedReconnect(true);
+        try {
+          await reconnect();
+        } catch (error) {
+          console.error('Failed to reconnect:', error);
+        }
+      }
+    };
+
+    handleReconnection();
+  }, [walletConnected, signer, attemptedReconnect, reconnect]);
 
   const handleImageLoadChange = (loaded: boolean) => {
     setImageLoaded(loaded);
