@@ -55,5 +55,17 @@ export const useDayGlimpse = () => {
     }
   }
 
-  return { getDayGlimpse, setDayGlimpse, deleteDayGlimpse, isExpired, markExpired, mintNFT, };
+  const areMutualFollowers = async (profileAddress: string, profileViewerAddress: string) => {
+    try {
+      console.log("Calling areMutualFollowers...");
+      if (!walletConnected) throw new Error("Wallet not connected");
+      return await callContract(dayGlimpseAddress, abi, "areMutualFollowers", [profileAddress, profileViewerAddress]);
+    } catch (error) {
+      console.log(error);
+      console.log("areMutualFollowers reverted. Returning false...");
+      return false;
+    }
+  }
+
+  return { getDayGlimpse, setDayGlimpse, deleteDayGlimpse, isExpired, markExpired, mintNFT, areMutualFollowers };
 }

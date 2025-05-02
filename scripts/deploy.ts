@@ -19,6 +19,7 @@ async function main() {
   console.log("DayGlimpseNFT deployed to:", dayGlimpseNFTAddress);
 
   await dayGlimpse.setNFTContract(dayGlimpseNFTAddress);
+  await dayGlimpse.setFollowerSystemContract('0xf01103E5a9909Fc0DBe8166dA7085e0285daDDcA');
 }
 
 main()

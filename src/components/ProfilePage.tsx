@@ -30,12 +30,11 @@ export const ProfilePage = () => {
 
   return (
     <div className={styles.container}>
-      {/* Logo with fixed position at the top */}
       <DayGlimpseLogo
         size="large"
         animated={true}
         showSubtitle={true}
-        fixedPosition={true} // Enable fixed positioning
+        fixedPosition={true}
       />
 
       <div className={styles.imageContainer}>
@@ -51,7 +50,8 @@ export const ProfilePage = () => {
           onImageLoad={handleImageLoadChange}
         />
 
-        {!isOwner && image && profileAddress && !isPrivate && (
+        {/* ClaimNFTButton will handle the mutual followers check internally */}
+        {!isOwner && image && profileAddress && (
           <ClaimNFTButton
             imageUrl={image}
             profileAddress={profileAddress}
