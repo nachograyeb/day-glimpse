@@ -41,6 +41,7 @@
   padding: 0 1rem;
 }
 
+/* Updated imageViewer to ensure proper centering */
 .imageViewer {
   width: 100%;
   height: 100%;
@@ -50,8 +51,10 @@
   justify-content: center;
   padding: 1rem;
   margin: 1rem 0;
+  min-height: 300px; /* Ensures consistent minimum height */
 }
 
+/* Updated image styling for perfect centering */
 .image {
   max-width: 90%;
   max-height: 80vh;
@@ -59,10 +62,16 @@
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   border: 2px solid rgba(255, 255, 255, 0.1);
   transition: transform 0.3s ease;
+  object-fit: contain; /* Ensures the image maintains aspect ratio */
+  position: absolute; /* Position absolutely to allow for centering */
+  top: 50%; /* Position halfway from the top */
+  left: 50%; /* Position halfway from the left */
+  transform: translate(-50%, -50%); /* Offset by half the element's dimensions to center */
 }
 
+/* Updated hover effect to maintain centering */
 .image:hover {
-  transform: scale(1.01);
+  transform: translate(-50%, -50%) scale(1.01); /* Maintain centering while scaling */
 }
 
 .deleteButton {
