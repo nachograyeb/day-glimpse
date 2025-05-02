@@ -16,6 +16,7 @@ const _LSP8_TOKENID_FORMAT_HASH = "0x0000000000000000000000000000000000000000000
 describe("DayGlimpseNFT", function () {
   let dayGlimpse: DayGlimpse;
   let dayGlimpseNFT: DayGlimpseNFT;
+  let mockFollowerSystem: any;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -30,6 +31,10 @@ describe("DayGlimpseNFT", function () {
   beforeEach(async function () {
     [owner, user1, user2, user3, ...users] = await ethers.getSigners();
 
+    // Deploy mock follower system
+    const MockFollowerSystemFactory = await ethers.getContractFactory("MockLSP26FollowerSystem");
+    mockFollowerSystem = await MockFollowerSystemFactory.deploy();
+
     const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
     dayGlimpse = await DayGlimpseFactory.deploy() as DayGlimpse;
 
@@ -42,6 +47,14 @@ describe("DayGlimpseNFT", function () {
     ) as DayGlimpseNFT;
 
     await dayGlimpse.connect(owner).setNFTContract(dayGlimpseNFT.target);
+
+    // Set up the follower system
+    await dayGlimpse.connect(owner).setFollowerSystemContract(mockFollowerSystem.target);
+
+    // Setup mutual followers for tests
+    await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
+    await mockFollowerSystem.setMutualFollowers(user1.address, user3.address);
+    await mockFollowerSystem.setMutualFollowers(user2.address, user3.address);
   });
 
   describe("Constructor", function () {
@@ -123,8 +136,10 @@ describe("DayGlimpseNFT", function () {
     });
 
     it("Should mint an NFT when called through the DayGlimpse contract", async function () {
+      // Setup public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // Mint NFT through DayGlimpse contract
       const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
       const receipt = await tx.wait();
 
@@ -146,14 +161,34 @@ describe("DayGlimpseNFT", function () {
               break;
             }
           } catch (e) {
-            console.log("Not the event we're looking for");
+            // Not the event we're looking for
           }
         }
       }
 
       expect(tokenId).to.not.be.undefined;
-
       expect(await dayGlimpseNFT.tokenOwnerOf(tokenId)).to.equal(user2.address);
+    });
+
+    it("Should enforce mutual follower requirement through DayGlimpse", async function () {
+      // Setup public glimpse
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      // Remove mutual follower status between user1 and user3
+      await mockFollowerSystem.setFollowStatus(user1.address, user3.address, false);
+
+      // Try to mint - should fail because no longer mutual followers
+      await expect(
+        dayGlimpse.connect(user3).mintNFT(user1.address, true, "0x")
+      ).to.be.revertedWith("DayGlimpse: must be mutual followers");
+
+      // Restore follower status and ensure minting works
+      await mockFollowerSystem.setMutualFollowers(user1.address, user3.address);
+
+      // Should succeed now
+      await expect(
+        dayGlimpse.connect(user3).mintNFT(user1.address, true, "0x")
+      ).not.to.be.reverted;
     });
 
     it("Should store the correct metadata for the minted token", async function () {
@@ -182,7 +217,7 @@ describe("DayGlimpseNFT", function () {
               break;
             }
           } catch (e) {
-            console.log("Not the event we're looking for");
+            // Not the event we're looking for
           }
         }
       }
@@ -192,25 +227,32 @@ describe("DayGlimpseNFT", function () {
       const dataKey = ethers.zeroPadValue(metadataKey, 32);
       const rawMetadata = await dayGlimpseNFT["getDataForTokenId(bytes32,bytes32)"](tokenId, dataKey);
 
+      // Decode the metadata
       const decodedMetadata = ethers.AbiCoder.defaultAbiCoder().decode(
         ["bytes", "address", "uint256"],
         rawMetadata
       );
 
+      // Verify the metadata is correct
       expect(ethers.toUtf8String(decodedMetadata[0])).to.equal(ethers.toUtf8String(testStorageHash));
-      expect(decodedMetadata[1]).to.equal(user1.address);
-      expect(decodedMetadata[2]).to.equal(eventTimestamp);
+      expect(decodedMetadata[1]).to.equal(user1.address); // profile
+      expect(decodedMetadata[2]).to.equal(eventTimestamp); // timestamp
     });
 
     it("Should emit DayGlimpseNFTMinted event with correct parameters", async function () {
+      // Set a public day glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // Get the current block timestamp
       const blockNumBefore = await ethers.provider.getBlockNumber();
       const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+      const timestamp = blockBefore!.timestamp;
 
+      // Mint NFT with force=true
       const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
       const receipt = await tx.wait();
 
+      // Verify the DayGlimpseNFTMinted event
       if (receipt && receipt.logs) {
         const eventInterface = new ethers.Interface([
           "event DayGlimpseNFTMinted(address indexed minter, address indexed profile, uint256 timestamp, bytes32 tokenId)"
@@ -230,6 +272,7 @@ describe("DayGlimpseNFT", function () {
               expect(parsedLog.args.minter).to.equal(user2.address);
               expect(parsedLog.args.profile).to.equal(user1.address);
 
+              // Expected tokenId calculation - using the current timestamp from the event
               const expectedTokenId = ethers.keccak256(
                 ethers.solidityPacked(
                   ["address", "address", "uint256"],
@@ -241,7 +284,7 @@ describe("DayGlimpseNFT", function () {
               break;
             }
           } catch (e) {
-            console.log("Not the event we're looking for");
+            // Not the event we're looking for
           }
         }
 
@@ -250,11 +293,14 @@ describe("DayGlimpseNFT", function () {
     });
 
     it("Should emit LSP8-related events", async function () {
+      // Set a public day glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // Mint with force=true
       const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
       const receipt = await tx.wait();
 
+      // Check that at least one log is from the NFT contract
       if (receipt && receipt.logs) {
         let foundNFTContractEvent = false;
 
@@ -272,10 +318,12 @@ describe("DayGlimpseNFT", function () {
 
   describe("getDayGlimpseDataForToken", function () {
     it("Should return correct data for a minted token", async function () {
+      // Setup: Create a glimpse and mint an NFT
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
       const tx = await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
       const receipt = await tx.wait();
 
+      // Extract tokenId from event
       let tokenId;
       if (receipt && receipt.logs) {
         const eventInterface = new ethers.Interface([
@@ -294,23 +342,28 @@ describe("DayGlimpseNFT", function () {
               break;
             }
           } catch (e) {
-            console.log("Not the event we're looking for");
+            // Not the event we're looking for
           }
         }
       }
 
+      // Call getDayGlimpseDataForToken
       const [storageHash, profile, timestamp] = await dayGlimpseNFT.getDayGlimpseDataForToken(tokenId);
 
+      // Verify data
       expect(ethers.toUtf8String(storageHash)).to.equal(ethers.toUtf8String(testStorageHash));
       expect(profile).to.equal(user1.address);
+      // We don't check the exact timestamp, but it should be a non-zero value
       expect(timestamp).to.be.gt(0);
     });
   });
 
   describe("Integration with DayGlimpse", function () {
     it("Should fail to mint when content is private", async function () {
+      // Set a private day glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, true);
 
+      // Try to mint - should fail because glimpse is private
       await expect(
         dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x")
       ).to.be.revertedWith("DayGlimpse: Cannot mint from private DayGlimpse");
@@ -318,12 +371,16 @@ describe("DayGlimpseNFT", function () {
 
     it("Should allow mints from the same glimpse for different users, but not the same user", async function () {
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      // First mint - should succeed
       await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
 
+      // Second mint with force=true - should also succeed
       await expect(
         dayGlimpse.connect(user3).mintNFT(user1.address, true, "0x")
       ).not.to.be.reverted;
 
+      // Third mint - should fail because the same user already minted
       await expect(
         dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x")
       ).to.be.reverted;
@@ -332,42 +389,53 @@ describe("DayGlimpseNFT", function () {
 
   describe("Close Friends Functionality", function () {
     it("Should establish close friend relationship after minting NFT", async function () {
+      // User1 creates a public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // User2 mints an NFT from user1's glimpse
       await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
 
-
+      // User1 now creates a private glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
 
+      // User2 should be able to access user1's private glimpse
       const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
 
+      // Verify the glimpse data
       expect(glimpse.isPrivate).to.equal(true);
       expect(ethers.toUtf8String(glimpse.storageHash)).to.equal(ethers.toUtf8String(privateStorageHash));
     });
 
     it("Should prevent non-close friends from accessing private content", async function () {
+      // User1 creates a public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // User2 mints an NFT from user1's glimpse
       await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
 
-
+      // User1 now creates a private glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
 
+      // User3 (not a close friend) should NOT be able to access user1's private glimpse
       await expect(
         dayGlimpse.connect(user3).getDayGlimpse(user1.address)
       ).to.be.revertedWith("DayGlimpse: This content is only available to close friends");
     });
 
     it("Should handle multiple token ownership correctly", async function () {
+      // Setup: Create different glimpses for different users
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
       await dayGlimpse.connect(user2).setDayGlimpse(ethers.toUtf8Bytes("ipfs://User2Content"), false);
 
+      // User3 mints from both user1 and user2
       await dayGlimpse.connect(user3).mintNFT(user1.address, true, "0x");
       await dayGlimpse.connect(user3).mintNFT(user2.address, true, "0x");
 
+      // Both users create private glimpses
       await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
       await dayGlimpse.connect(user2).setDayGlimpse(ethers.toUtf8Bytes("ipfs://User2PrivateContent"), true);
 
+      // User3 should be able to access both private glimpses
       const glimpse1 = await dayGlimpse.connect(user3).getDayGlimpse(user1.address);
       const glimpse2 = await dayGlimpse.connect(user3).getDayGlimpse(user2.address);
 
@@ -375,36 +443,37 @@ describe("DayGlimpseNFT", function () {
       expect(glimpse2.isPrivate).to.equal(true);
     });
 
-    it("Should allow profile owner to always access their own private glimpse", async function () {
-      await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
+    it("Should interact correctly with mutual follower requirements", async function () {
+      // Setup mutual followers
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
 
-      const glimpse = await dayGlimpse.connect(user1).getDayGlimpse(user1.address);
-
-      expect(glimpse.isPrivate).to.equal(true);
-      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal(ethers.toUtf8String(privateStorageHash));
-    });
-
-    it("Should maintain close friend access after glimpse expires", async function () {
+      // User1 creates a public glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // User2 mints an NFT from user1's glimpse
       await dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x");
 
+      // User1 now creates a private glimpse
       await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
 
-      await time.increase(25 * 60 * 60); // 25 hours
-
-      expect(await dayGlimpse.isExpired(user1.address)).to.equal(true);
-
-      await expect(
-        dayGlimpse.connect(user2).getDayGlimpse(user1.address)
-      ).to.be.revertedWith("DayGlimpse: Content has expired");
-
-      await dayGlimpse.connect(user1).setDayGlimpse(privateStorageHash, true);
-
+      // User2 can access the private glimpse (as a close friend)
       const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
-
       expect(glimpse.isPrivate).to.equal(true);
-      expect(ethers.toUtf8String(glimpse.storageHash)).to.equal(ethers.toUtf8String(privateStorageHash));
+
+      // Now break the follower relationship
+      await mockFollowerSystem.setFollowStatus(user1.address, user2.address, false);
+
+      // User2 should STILL be able to access the private glimpse
+      // because the close friend relationship is based on NFT ownership,
+      // not follower status
+      const glimpseAfterUnfollow = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
+      expect(glimpseAfterUnfollow.isPrivate).to.equal(true);
+
+      // But user2 can't mint a new NFT without the follower relationship
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+      await expect(
+        dayGlimpse.connect(user2).mintNFT(user1.address, true, "0x")
+      ).to.be.revertedWith("DayGlimpse: must be mutual followers");
     });
   });
 

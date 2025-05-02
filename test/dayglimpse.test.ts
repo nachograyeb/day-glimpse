@@ -7,6 +7,7 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 describe("DayGlimpse", function () {
   let dayGlimpse: any;
   let mockNFTContract: any;
+  let mockFollowerSystem: any;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -19,28 +20,84 @@ describe("DayGlimpse", function () {
   beforeEach(async function () {
     [owner, user1, user2, user3, ...users] = await ethers.getSigners();
 
+    // Deploy mock NFT contract
     const MockNFTFactory = await ethers.getContractFactory("MockDayGlimpseNFT");
     mockNFTContract = await MockNFTFactory.deploy();
 
+    // Deploy mock follower system
+    const MockFollowerSystemFactory = await ethers.getContractFactory("MockLSP26FollowerSystem");
+    mockFollowerSystem = await MockFollowerSystemFactory.deploy();
+
+    // Deploy DayGlimpse contract
     const DayGlimpseFactory: ContractFactory = await ethers.getContractFactory("DayGlimpse");
     dayGlimpse = await DayGlimpseFactory.deploy();
+
+    // Set NFT contract in DayGlimpse
+    await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+
+    // Set Follower System contract in DayGlimpse
+    await dayGlimpse.connect(owner).setFollowerSystemContract(mockFollowerSystem.target);
   });
 
   describe("Owner functions", function () {
     it("Should set the NFT contract address", async function () {
-      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+      // Since we set it in beforeEach, we'll reset and test again
+      const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
+      const newDayGlimpse = await DayGlimpseFactory.deploy();
 
-      expect(await dayGlimpse.nftContractAddress()).to.equal(mockNFTContract.target);
+      await newDayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
 
-      const filter = dayGlimpse.filters.NFTContractSet;
-      const events = await dayGlimpse.queryFilter(filter);
+      expect(await newDayGlimpse.nftContractAddress()).to.equal(mockNFTContract.target);
+
+      const filter = newDayGlimpse.filters.NFTContractSet;
+      const events = await newDayGlimpse.queryFilter(filter);
       expect(events.length).to.equal(1);
       expect(events[0].args[0]).to.equal(mockNFTContract.target);
     });
 
     it("Should fail when non-owner tries to set NFT contract", async function () {
+      const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
+      const newDayGlimpse = await DayGlimpseFactory.deploy();
+
       await expect(
-        dayGlimpse.connect(user1).setNFTContract(mockNFTContract.target)
+        newDayGlimpse.connect(user1).setNFTContract(mockNFTContract.target)
+      ).to.be.revertedWith("DayGlimpse: Caller is not the owner");
+    });
+
+    it("Should set the follower system contract address", async function () {
+      const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
+      const newDayGlimpse = await DayGlimpseFactory.deploy();
+
+      await newDayGlimpse.connect(owner).setFollowerSystemContract(mockFollowerSystem.target);
+
+      // Note: followerSystemAddress is private in the contract
+      // We can test its functionality instead of direct access
+
+      // Setup mutual followers 
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
+
+      // Set a glimpse
+      await newDayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      // Set NFT contract too
+      await newDayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+
+      // Now user2 should be able to mint because they're mutual followers
+      const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
+      await mockNFTContract.setMockTokenId(mockTokenId);
+
+      // If this doesn't revert, it proves the follower system was properly set
+      await expect(
+        newDayGlimpse.connect(user2).mintNFT(user1.address, true, "0x")
+      ).not.to.be.reverted;
+    });
+
+    it("Should fail when non-owner tries to set follower system contract", async function () {
+      const DayGlimpseFactory = await ethers.getContractFactory("DayGlimpse");
+      const newDayGlimpse = await DayGlimpseFactory.deploy();
+
+      await expect(
+        newDayGlimpse.connect(user1).setFollowerSystemContract(mockFollowerSystem.target)
       ).to.be.revertedWith("DayGlimpse: Caller is not the owner");
     });
   });
@@ -56,7 +113,9 @@ describe("DayGlimpse", function () {
     });
 
     it("Should replace an existing day glimpse", async function () {
-      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+      // Setup
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
+
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
 
       const newStorageHash = ethers.toUtf8Bytes("ipfs://QmNewTest456");
@@ -74,7 +133,6 @@ describe("DayGlimpse", function () {
 
   describe("getDayGlimpse", function () {
     beforeEach(async function () {
-      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
     });
 
@@ -228,8 +286,9 @@ describe("DayGlimpse", function () {
   describe("mintNFT", function () {
     beforeEach(async function () {
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, isPrivate);
-
-      await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
+      // Make sure the mock follower system is set correctly for all tests
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
+      await mockFollowerSystem.setMutualFollowers(user1.address, user3.address);
     });
 
     it("Should fail to mint when NFT contract is not set", async function () {
@@ -238,9 +297,49 @@ describe("DayGlimpse", function () {
 
       await newDayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
+      // Set follower system so that's not the reason for failing
+      await newDayGlimpse.connect(owner).setFollowerSystemContract(mockFollowerSystem.target);
+
       await expect(
         newDayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
       ).to.be.revertedWith("DayGlimpse: NFT contract not set");
+    });
+
+    it("Should fail to mint when users are not mutual followers", async function () {
+      // Reset follower status
+      await mockFollowerSystem.setFollowStatus(user1.address, user2.address, false);
+      await mockFollowerSystem.setFollowStatus(user2.address, user1.address, false);
+
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      await expect(
+        dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
+      ).to.be.revertedWith("DayGlimpse: must be mutual followers");
+    });
+
+    it("Should fail if only one user follows the other", async function () {
+      // Set one-way follow relationship
+      await mockFollowerSystem.setFollowStatus(user1.address, user2.address, false);
+      await mockFollowerSystem.setFollowStatus(user2.address, user1.address, true);
+
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      await expect(
+        dayGlimpse.connect(user2).mintNFT(user1.address, false, "0x")
+      ).to.be.revertedWith("DayGlimpse: must be mutual followers");
+    });
+
+    it("Should allow self-minting without follower check", async function () {
+      // Even without followers, the profile owner should be able to mint from their own glimpse
+      await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+
+      const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
+      await mockNFTContract.setMockTokenId(mockTokenId);
+
+      // User1 mints from their own glimpse - should succeed
+      await expect(
+        dayGlimpse.connect(user1).mintNFT(user1.address, false, "0x")
+      ).not.to.be.reverted;
     });
 
     it("Should fail to mint when glimpse is private", async function () {
@@ -261,7 +360,7 @@ describe("DayGlimpse", function () {
       ).to.be.revertedWith("DayGlimpse: Content has expired");
     });
 
-    it("Should mint NFT successfully", async function () {
+    it("Should mint NFT successfully when users are mutual followers", async function () {
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
 
       const mockTokenId = ethers.keccak256(ethers.toUtf8Bytes("mockTokenId"));
@@ -285,6 +384,8 @@ describe("DayGlimpse", function () {
     beforeEach(async function () {
       await dayGlimpse.connect(owner).setNFTContract(mockNFTContract.target);
       await dayGlimpse.connect(user1).setDayGlimpse(testStorageHash, false);
+      // Set up mutual followers for minting
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
     });
 
     it("Should establish close friend relationship after minting NFT", async function () {
@@ -351,6 +452,49 @@ describe("DayGlimpse", function () {
       const glimpse = await dayGlimpse.connect(user2).getDayGlimpse(user1.address);
       expect(glimpse.isPrivate).to.equal(true);
       expect(ethers.toUtf8String(glimpse.storageHash)).to.equal("ipfs://QmPrivateContent");
+    });
+  });
+
+  describe("areMutualFollowers", function () {
+    beforeEach(async function () {
+      // Reset follower statuses
+      await mockFollowerSystem.setFollowStatus(user1.address, user2.address, false);
+      await mockFollowerSystem.setFollowStatus(user2.address, user1.address, false);
+      await mockFollowerSystem.setFollowStatus(user1.address, user3.address, false);
+      await mockFollowerSystem.setFollowStatus(user3.address, user1.address, false);
+    });
+
+    it("Should return true for self", async function () {
+      const areMutual = await dayGlimpse.areMutualFollowers(user1.address, user1.address);
+      expect(areMutual).to.equal(true);
+    });
+
+    it("Should return true when users are mutual followers", async function () {
+      await mockFollowerSystem.setMutualFollowers(user1.address, user2.address);
+
+      const areMutual = await dayGlimpse.areMutualFollowers(user1.address, user2.address);
+      expect(areMutual).to.equal(true);
+    });
+
+    it("Should return false when users are not following each other", async function () {
+      const areMutual = await dayGlimpse.areMutualFollowers(user1.address, user3.address);
+      expect(areMutual).to.equal(false);
+    });
+
+    it("Should return false when only one user follows the other", async function () {
+      // Set one-way follow relationship
+      await mockFollowerSystem.setFollowStatus(user1.address, user3.address, true);
+
+      const areMutual = await dayGlimpse.areMutualFollowers(user1.address, user3.address);
+      expect(areMutual).to.equal(false);
+    });
+
+    it("Should return false with different one-way relationship", async function () {
+      // Set other one-way follow relationship
+      await mockFollowerSystem.setFollowStatus(user3.address, user1.address, true);
+
+      const areMutual = await dayGlimpse.areMutualFollowers(user1.address, user3.address);
+      expect(areMutual).to.equal(false);
     });
   });
 });

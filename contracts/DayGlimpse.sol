@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "hardhat/console.sol";
+import {ILSP26FollowerSystem} from "@lukso/lsp26-contracts/contracts/ILSP26FollowerSystem.sol";
 
 interface IDayGlimpseNFT {
     function mintDayGlimpseNFT(
@@ -46,8 +47,19 @@ contract DayGlimpse {
     address public nftContractAddress;
 
     address public owner;
+
+    address private followerSystemAddress;
+
     modifier onlyOwner() {
         require(msg.sender == owner, "DayGlimpse: Caller is not the owner");
+        _;
+    }
+
+    modifier onlyMutualFollower(address _profile, address _viewer) {
+        require(
+            areMutualFollowers(_profile, _viewer),
+            "DayGlimpse: must be mutual followers"
+        );
         _;
     }
 
@@ -69,6 +81,12 @@ contract DayGlimpse {
     function setNFTContract(address _nftContractAddress) external onlyOwner {
         nftContractAddress = _nftContractAddress;
         emit NFTContractSet(_nftContractAddress);
+    }
+
+    function setFollowerSystemContract(
+        address _followerSystemAddress
+    ) external onlyOwner {
+        followerSystemAddress = _followerSystemAddress;
     }
 
     function setDayGlimpse(
@@ -113,7 +131,7 @@ contract DayGlimpse {
         address _profile,
         bool _force,
         bytes memory _data
-    ) external returns (bytes32) {
+    ) external onlyMutualFollower(_profile, msg.sender) returns (bytes32) {
         require(
             nftContractAddress != address(0),
             "DayGlimpse: NFT contract not set"
@@ -176,6 +194,22 @@ contract DayGlimpse {
             return false;
         }
         return block.timestamp > data.timestamp + EXPIRATION_TIME;
+    }
+
+    function areMutualFollowers(
+        address _profile,
+        address _viewer
+    ) public view returns (bool) {
+        return
+            _profile == _viewer ||
+            (ILSP26FollowerSystem(followerSystemAddress).isFollowing(
+                _viewer,
+                _profile
+            ) &&
+                ILSP26FollowerSystem(followerSystemAddress).isFollowing(
+                    _profile,
+                    _viewer
+                ));
     }
 
     function _isCloseFriend(
