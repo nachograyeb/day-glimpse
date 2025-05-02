@@ -14,7 +14,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
 
-  const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired } = useDayGlimpse();
+  const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired, } = useDayGlimpse();
 
   useEffect(() => {
     if (profileAddress) {
@@ -25,6 +25,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const fetchImage = async (address: string) => {
     try {
       setIsLoading(true);
+
       const dayGlimpseData = await getDayGlimpse(address);
       console.log('DayGlimpse data:', dayGlimpseData);
 

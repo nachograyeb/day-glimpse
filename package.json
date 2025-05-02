@@ -14,6 +14,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@lukso/lsp26-contracts": "^0.1.3",
     "@lukso/lsp8-contracts": "^0.16.3",
     "@lukso/up-provider": "^0.3.5",
     "@netlify/plugin-nextjs": "^5.10.7",
