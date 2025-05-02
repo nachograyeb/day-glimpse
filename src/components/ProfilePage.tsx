@@ -18,9 +18,10 @@ export const ProfilePage = () => {
     error,
     isLoading: imageLoading,
     isPrivate,
+    initialized,
     uploadImage,
     deleteImage,
-    initialized: imageInitialized
+    setError
   } = useProfileImage({
     profileAddress,
     isOwner
@@ -32,10 +33,10 @@ export const ProfilePage = () => {
 
   // Wait for both profile and image to be ready
   useEffect(() => {
-    if (!profileLoading && imageInitialized) {
+    if (!profileLoading && initialized) {
       setPageReady(true);
     }
-  }, [profileLoading, imageInitialized]);
+  }, [profileLoading, initialized]);
 
   if (!pageReady) {
     return (
@@ -49,7 +50,7 @@ export const ProfilePage = () => {
 
         <div className={styles.loadingContainer}>
           <div className={styles.loadingSpinner}></div>
-          <p>Loading content...</p>
+          <p>Loading Day Glimpse...</p>
         </div>
       </div>
     );

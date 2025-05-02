@@ -17,10 +17,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <div className={styles.wrapper}>
         <div className={styles.waitingState}>
           <div className={styles.animatedBackground} />
-          <div className={styles.loadingContainer}>
+          {/* <div className={styles.loadingContainer}>
             <div className={styles.loadingSpinner}></div>
-            <p>Loading profile...</p>
-          </div>
+            <p>Connecting to your Universal Profile...</p>
+          </div> */}
         </div>
       </div>
     );
