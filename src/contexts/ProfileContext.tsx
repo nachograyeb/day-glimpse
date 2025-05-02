@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { createClientUPProvider } from '@lukso/up-provider'
-import { type Eip1193Provider, ethers } from 'ethers'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { createClientUPProvider } from '@lukso/up-provider';
+import { type Eip1193Provider, ethers } from 'ethers';
 
 interface ProfileContextType {
   chainId: number;
@@ -30,40 +30,57 @@ interface EnhancedTransactionResponse extends ethers.TransactionResponse {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [chainId, setChainId] = useState<number>(0)
-  const [accounts, setAccounts] = useState<Array<`0x${string}`>>([])
-  const [contextAccounts, setContextAccounts] = useState<Array<`0x${string}`>>([])
-  const [walletConnected, setWalletConnected] = useState(false)
-  const [error, setError] = useState('')
-  const [provider, setProvider] = useState<any>(null)
-  const [browserProvider, setBrowserProvider] = useState<ethers.BrowserProvider | null>(null)
-  const [isOwner, setIsOwner] = useState(false)
-  const [profileAddress, setProfileAddress] = useState<string | null>(null)
-  const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null)
+  const [chainId, setChainId] = useState<number>(0);
+  const [accounts, setAccounts] = useState<Array<`0x${string}`>>([]);
+  const [contextAccounts, setContextAccounts] = useState<Array<`0x${string}`>>([]);
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [error, setError] = useState('');
+  const [provider, setProvider] = useState<any>(null);
+  const [browserProvider, setBrowserProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [profileAddress, setProfileAddress] = useState<string | null>(null);
+  const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
   const [directProvider, setDirectProvider] = useState<ethers.JsonRpcProvider | null>(null);
 
-  const updateConnected = useCallback((accounts: Array<`0x${string}`>, contextAccounts: Array<`0x${string}`>, chainId: number) => {
-    setWalletConnected(accounts.length > 0 && contextAccounts.length > 0)
+  // Use refs to store the latest values without triggering re-renders
+  const accountsRef = useRef<Array<`0x${string}`>>(accounts);
+  const contextAccountsRef = useRef<Array<`0x${string}`>>(contextAccounts);
+  const chainIdRef = useRef<number>(chainId);
 
-    if (contextAccounts.length > 0) {
-      setProfileAddress(contextAccounts[0]);
+  useEffect(() => {
+    accountsRef.current = accounts;
+  }, [accounts]);
+
+  useEffect(() => {
+    contextAccountsRef.current = contextAccounts;
+  }, [contextAccounts]);
+
+  useEffect(() => {
+    chainIdRef.current = chainId;
+  }, [chainId]);
+
+  const updateConnected = useCallback((accs: Array<`0x${string}`>, ctxAccs: Array<`0x${string}`>, chId: number) => {
+    setWalletConnected(accs.length > 0 && ctxAccs.length > 0);
+
+    if (ctxAccs.length > 0) {
+      setProfileAddress(ctxAccs[0]);
     }
 
-    if (accounts.length > 0 && contextAccounts.length > 0) {
-      const isOwner = accounts[0].toLowerCase() === contextAccounts[0].toLowerCase();
-      setIsOwner(isOwner);
+    if (accs.length > 0 && ctxAccs.length > 0) {
+      const ownerStatus = accs[0].toLowerCase() === ctxAccs[0].toLowerCase();
+      setIsOwner(ownerStatus);
     } else {
       setIsOwner(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const _provider = createClientUPProvider()
-        const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider)
-        setProvider(_provider)
-        setBrowserProvider(_browserProvider)
+        const _provider = createClientUPProvider();
+        const _browserProvider = new ethers.BrowserProvider(_provider as unknown as Eip1193Provider);
+        setProvider(_provider);
+        setBrowserProvider(_browserProvider);
 
         const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
         setDirectProvider(_directProvider);
@@ -72,12 +89,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (parentProfileAddress) {
           console.log('Found stored parent profile address:', parentProfileAddress);
         }
-
       } catch (err) {
-        console.error('Failed to create provider:', err)
+        console.error('Failed to create provider:', err);
       }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (!browserProvider || !provider) return;
@@ -85,55 +101,69 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     async function init() {
       if (!browserProvider || !provider) return;
       try {
-        const network = await browserProvider.getNetwork()
-        const _chainId = Number(network.chainId)
-        setChainId(_chainId)
+        const network = await browserProvider.getNetwork();
+        const _chainId = Number(network.chainId);
+        setChainId(_chainId);
 
-        const _signer = await browserProvider.getSigner()
-        setSigner(_signer)
+        const _signer = await browserProvider.getSigner();
+        setSigner(_signer);
 
-        const _accounts = [await _signer.getAddress()] as Array<`0x${string}`>
-        setAccounts(_accounts)
+        const _accounts = [await _signer.getAddress()] as Array<`0x${string}`>;
+        setAccounts(_accounts);
 
-        const _contextAccounts = provider.contextAccounts
-        updateConnected(_accounts, _contextAccounts, _chainId)
+        const _contextAccounts = provider.contextAccounts;
+        setContextAccounts(_contextAccounts);
+
+        updateConnected(_accounts, _contextAccounts, _chainId);
       } catch (error) {
         console.log(error);
       }
     }
-    init()
 
-    const accountsChanged = (_accounts: Array<`0x${string}`>) => {
-      setAccounts(_accounts)
-      updateConnected(_accounts, contextAccounts, chainId)
-    }
+    init();
+  }, [browserProvider, provider, updateConnected]); // Only run when providers change
 
-    const contextAccountsChanged = (_accounts: Array<`0x${string}`>) => {
-      setContextAccounts(_accounts)
-      updateConnected(accounts, _accounts, chainId)
-    }
+  useEffect(() => {
+    if (!provider) return;
 
-    const chainChanged = (_chainId: string | number) => {
-      const chainIdNumber = typeof _chainId === 'string' ? parseInt(_chainId, 16) : _chainId
-      setChainId(chainIdNumber)
-      updateConnected(accounts, contextAccounts, chainIdNumber)
-    }
+    const handleAccountsChanged = (_accounts: Array<`0x${string}`>) => {
+      if (JSON.stringify(_accounts) !== JSON.stringify(accountsRef.current)) {
+        setAccounts(_accounts);
+        updateConnected(_accounts, contextAccountsRef.current, chainIdRef.current);
+      }
+    };
 
-    provider.on('accountsChanged', accountsChanged)
-    provider.on('chainChanged', chainChanged)
+    const handleContextAccountsChanged = (_accounts: Array<`0x${string}`>) => {
+      if (JSON.stringify(_accounts) !== JSON.stringify(contextAccountsRef.current)) {
+        setContextAccounts(_accounts);
+        updateConnected(accountsRef.current, _accounts, chainIdRef.current);
+      }
+    };
+
+    const handleChainChanged = (_chainId: string | number) => {
+      const chainIdNumber = typeof _chainId === 'string' ? parseInt(_chainId, 16) : _chainId;
+      if (chainIdNumber !== chainIdRef.current) {
+        setChainId(chainIdNumber);
+        updateConnected(accountsRef.current, contextAccountsRef.current, chainIdNumber);
+      }
+    };
+
+    // Set up event listeners
+    provider.on('accountsChanged', handleAccountsChanged);
+    provider.on('chainChanged', handleChainChanged);
 
     if (provider && provider.on) {
-      provider.on('contextAccountsChanged', contextAccountsChanged)
+      provider.on('contextAccountsChanged', handleContextAccountsChanged);
     }
 
     return () => {
-      provider.off('accountsChanged', accountsChanged)
-      provider.off('chainChanged', chainChanged)
+      provider.off('accountsChanged', handleAccountsChanged);
+      provider.off('chainChanged', handleChainChanged);
       if (provider && provider.off) {
-        provider.off('contextAccountsChanged', contextAccountsChanged)
+        provider.off('contextAccountsChanged', handleContextAccountsChanged);
       }
-    }
-  }, [browserProvider, provider, chainId, accounts, contextAccounts, updateConnected])
+    };
+  }, [provider, updateConnected]);
 
   const callContract = useCallback(async (contractAddress: string, abi: any[], method: string, args: any[]) => {
     if (!provider || !accounts[0]) throw new Error('No provider or profile address available');
@@ -332,6 +362,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
           checkReceipt();
         });
+      };
+
+      enhancedTx.isPending = async () => {
+        try {
+          const receipt = await directProvider?.getTransactionReceipt(tx.hash);
+          return receipt === null;
+        } catch (error) {
+          console.error("Error checking if transaction is pending:", error);
+          return true; // Assume it's still pending if there's an error
+        }
       };
 
       return enhancedTx;
