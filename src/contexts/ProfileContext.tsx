@@ -15,6 +15,7 @@ interface ProfileContextType {
   isOwner: boolean;
   profileAddress: string | null;
   signer: ethers.JsonRpcSigner | null;
+  isLoading: boolean; // New loading state
   callContract: (contractAddress: string, abi: any[], method: string, args: any[]) => Promise<any>;
   sendTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<ethers.TransactionResponse>;
   sendAppTransaction: (contractAddress: string, abi: any[], method: string, args: any[], options?: any) => Promise<any>;
@@ -41,6 +42,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profileAddress, setProfileAddress] = useState<string | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
   const [directProvider, setDirectProvider] = useState<ethers.JsonRpcProvider | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state, default to true
 
   // Use refs to store the latest values without triggering re-renders
   const accountsRef = useRef<Array<`0x${string}`>>(accounts);
@@ -60,7 +62,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [chainId]);
 
   const updateConnected = useCallback((accs: Array<`0x${string}`>, ctxAccs: Array<`0x${string}`>, chId: number) => {
-    setWalletConnected(accs.length > 0 && ctxAccs.length > 0);
+    const isConnected = accs.length > 0 && ctxAccs.length > 0;
+    setWalletConnected(isConnected);
 
     if (ctxAccs.length > 0) {
       setProfileAddress(ctxAccs[0]);
@@ -72,7 +75,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } else {
       setIsOwner(false);
     }
-  }, []);
+
+    // Only set loading to false after we have account information
+    if (isConnected || (!isConnected && provider !== null)) {
+      setIsLoading(false);
+    }
+  }, [provider]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -91,6 +99,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('Failed to create provider:', err);
+        setIsLoading(false); // Set loading to false if we fail to create provider
       }
     }
   }, []);
@@ -117,11 +126,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         updateConnected(_accounts, _contextAccounts, _chainId);
       } catch (error) {
         console.log(error);
+        setIsLoading(false); // Set loading to false if we encounter an error
       }
     }
 
     init();
-  }, [browserProvider, provider, updateConnected]); // Only run when providers change
+  }, [browserProvider, provider, updateConnected]);
 
   useEffect(() => {
     if (!provider) return;
@@ -390,6 +400,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       isOwner,
       profileAddress,
       signer,
+      isLoading,
       callContract,
       sendTransaction,
       sendAppTransaction,

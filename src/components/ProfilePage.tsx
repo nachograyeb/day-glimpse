@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useProfileImage } from '@/hooks/useProfileImage';
 import { ImageUploader } from './ImageUploader';
@@ -9,16 +9,18 @@ import DayGlimpseLogo from './DayGlimpseLogo';
 import styles from './ProfilePage.module.css';
 
 export const ProfilePage = () => {
-  const { isOwner, profileAddress } = useProfile();
+  const { isOwner, profileAddress, isLoading: profileLoading } = useProfile();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
 
   const {
     image,
     error,
-    isLoading,
+    isLoading: imageLoading,
     isPrivate,
     uploadImage,
-    deleteImage
+    deleteImage,
+    initialized: imageInitialized
   } = useProfileImage({
     profileAddress,
     isOwner
@@ -27,6 +29,31 @@ export const ProfilePage = () => {
   const handleImageLoadChange = (loaded: boolean) => {
     setImageLoaded(loaded);
   };
+
+  // Wait for both profile and image to be ready
+  useEffect(() => {
+    if (!profileLoading && imageInitialized) {
+      setPageReady(true);
+    }
+  }, [profileLoading, imageInitialized]);
+
+  if (!pageReady) {
+    return (
+      <div className={styles.container}>
+        <DayGlimpseLogo
+          size="large"
+          animated={true}
+          showSubtitle={true}
+          fixedPosition={true}
+        />
+
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Loading content...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -43,7 +70,7 @@ export const ProfilePage = () => {
           profileAddress={profileAddress}
           image={image}
           error={error}
-          isLoading={isLoading}
+          isLoading={imageLoading}
           isPrivate={isPrivate}
           onUpload={uploadImage}
           onDelete={deleteImage}

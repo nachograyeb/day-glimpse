@@ -9,14 +9,29 @@ interface AppLayoutProps {
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
-  const { walletConnected } = useProfile();
+  const { walletConnected, isLoading } = useProfile();
+
+  // Show loading indicator while checking wallet connection
+  if (isLoading) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.waitingState}>
+          <div className={styles.animatedBackground} />
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.waitingState}>
         <div className={styles.animatedBackground} />
 
-        {/* Show ConnectProfile when not connected, otherwise show children */}
+        {/* Only show ConnectProfile when definitely not connected */}
         {!walletConnected ? <ConnectProfile /> : children}
       </div>
     </div>

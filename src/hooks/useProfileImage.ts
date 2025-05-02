@@ -13,18 +13,23 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState<boolean>(false); // New flag to track initialization
 
   const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired, } = useDayGlimpse();
 
   useEffect(() => {
     if (profileAddress) {
       fetchImage(profileAddress);
+    } else {
+      // If no profileAddress, mark as initialized so UI can proceed
+      setInitialized(true);
     }
   }, [profileAddress]);
 
   const fetchImage = async (address: string) => {
     try {
       setIsLoading(true);
+      setInitialized(false); // Reset initialized while loading
 
       const dayGlimpseData = await getDayGlimpse(address);
       console.log('DayGlimpse data:', dayGlimpseData);
@@ -38,6 +43,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
           markExpired(address).then(() => console.log('Marked image as expired'));
         }
 
+        setInitialized(true); // Mark as initialized when no image found
         return;
       }
 
@@ -59,6 +65,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       setImage(null);
     } finally {
       setIsLoading(false);
+      setInitialized(true); // Always mark as initialized when fetch completes
     }
   };
 
@@ -86,6 +93,8 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
+      setInitialized(false); // Reset initialized while uploading
+
       const formData = new FormData();
       formData.append('image', file);
       formData.append('data', `{"profileAddress": "${profileAddress}"}`);
@@ -116,6 +125,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       throw err;
     } finally {
       setIsLoading(false);
+      setInitialized(true); // Mark as initialized when upload completes
     }
   };
 
@@ -133,6 +143,8 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
+      setInitialized(false); // Reset initialized while deleting
+
       await deleteDayGlimpse();
       const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
         method: 'DELETE',
@@ -150,6 +162,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       setError(err.message || 'Failed to delete image. Please try again.');
     } finally {
       setIsLoading(false);
+      setInitialized(true); // Mark as initialized when delete completes
     }
   };
 
@@ -158,6 +171,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     error,
     isLoading,
     isPrivate,
+    initialized,
     uploadImage,
     deleteImage,
     setError,
