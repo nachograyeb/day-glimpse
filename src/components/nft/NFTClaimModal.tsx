@@ -57,7 +57,7 @@ export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimMod
               <img src={imageUrl} alt="Profile" />
             </div>
             <p className={styles.description}>
-              This will create a unique NFT based on this profile image.
+              This will create a unique NFT based on this Day Glimpse.
               The NFT will be minted on the same chain as the Universal Profile.
             </p>
             <button
@@ -76,8 +76,7 @@ export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimMod
               <div className={styles.loader}></div>
             </div>
             <p className={styles.mintingDescription}>
-              Please wait while we create your NFT.
-              This process typically takes 15-30 seconds.
+              Your NFT will be ready in just a few moments...
             </p>
           </div>
         )}
@@ -87,27 +86,20 @@ export const NFTClaimModal = ({ imageUrl, profileAddress, onClose }: NFTClaimMod
             <h2 className={styles.modalTitle}>NFT Minted Successfully!</h2>
             <div className={styles.nftContainer}>
               <div className={styles.nftFrame}>
-                <img src={imageUrl} alt="Your NFT" />
+                <img src={imageUrl} alt="Go to Collections and see your NFT" />
               </div>
               <div className={styles.confetti}></div>
             </div>
             <div className={styles.nftDetails}>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Token ID:</span>
-                <span className={styles.detailValue}>#12345</span>
-              </div>
-              <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Collection:</span>
-                <span className={styles.detailValue}>Profile Pictures</span>
+                <span className={styles.detailValue}>DAY GLIMPSES</span>
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Owner:</span>
                 <span className={styles.detailValue}>{profileAddress.substring(0, 8)}...{profileAddress.substring(profileAddress.length - 6)}</span>
               </div>
             </div>
-            <button className={styles.viewNftButton}>
-              View in wallet
-            </button>
             <button
               className={styles.closeSuccessButton}
               onClick={onClose}
