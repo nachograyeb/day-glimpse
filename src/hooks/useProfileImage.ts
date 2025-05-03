@@ -13,7 +13,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
-  const [initialized, setInitialized] = useState<boolean>(false); // New flag to track initialization
+  const [initialized, setInitialized] = useState<boolean>(false);
 
   const { setDayGlimpse, getDayGlimpse, deleteDayGlimpse, isExpired, markExpired, } = useDayGlimpse();
 
@@ -21,7 +21,6 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     if (profileAddress) {
       fetchImage(profileAddress);
     } else {
-      // If no profileAddress, mark as initialized so UI can proceed
       setInitialized(true);
     }
   }, [profileAddress]);
@@ -29,7 +28,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
   const fetchImage = async (address: string) => {
     try {
       setIsLoading(true);
-      setInitialized(false); // Reset initialized while loading
+      setInitialized(false);
 
       const dayGlimpseData = await getDayGlimpse(address);
       console.log('DayGlimpse data:', dayGlimpseData);
@@ -43,11 +42,10 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
           markExpired(address).then(() => console.log('Marked image as expired'));
         }
 
-        setInitialized(true); // Mark as initialized when no image found
+        setInitialized(true);
         return;
       }
 
-      // Set the privacy status based on blockchain data
       setIsPrivate(dayGlimpseData.isPrivate);
 
       const response = await fetch(`/api/images/get?imageId=${dayGlimpseData.storageHash}`);
@@ -65,7 +63,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       setImage(null);
     } finally {
       setIsLoading(false);
-      setInitialized(true); // Always mark as initialized when fetch completes
+      setInitialized(true);
     }
   };
 
@@ -93,7 +91,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
-      setInitialized(false); // Reset initialized while uploading
+      setInitialized(false);
 
       const formData = new FormData();
       formData.append('image', file);
@@ -125,7 +123,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       throw err;
     } finally {
       setIsLoading(false);
-      setInitialized(true); // Mark as initialized when upload completes
+      setInitialized(true);
     }
   };
 
@@ -143,17 +141,19 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
     try {
       setError('');
       setIsLoading(true);
-      setInitialized(false); // Reset initialized while deleting
+      setInitialized(false);
 
       await deleteDayGlimpse();
-      const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
-        method: 'DELETE',
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Delete failed');
-      }
+      // Removing delete image api call to avoid unpinning from pinata (we need it to be available for the NFT)
+      // const response = await fetch(`/api/images/delete?imageId=${profileAddress}`, {
+      //   method: 'DELETE',
+      // });
+
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(errorData.error || 'Delete failed');
+      // }
 
       setImage(null);
       setIsPrivate(false);
@@ -162,7 +162,7 @@ export function useProfileImage({ profileAddress, isOwner }: UseProfileImageProp
       setError(err.message || 'Failed to delete image. Please try again.');
     } finally {
       setIsLoading(false);
-      setInitialized(true); // Mark as initialized when delete completes
+      setInitialized(true);
     }
   };
 
