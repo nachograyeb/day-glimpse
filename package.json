@@ -9,7 +9,6 @@
     "deploy": "hardhat run scripts/deploy.ts --network localhost --tsconfig tsconfig.hardhat.json",
     "deploy:luksoTestnet": "hardhat run scripts/deploy.ts --network luksoTestnet --tsconfig tsconfig.hardhat.json",
     "test:contracts": "hardhat test --tsconfig tsconfig.hardhat.json",
-    "testo": "npx ts-node --project tsconfig.hardhat.json scripts/testo.ts",
     "compile": "hardhat compile --tsconfig tsconfig.hardhat.json",
     "lint": "next lint"
   },
