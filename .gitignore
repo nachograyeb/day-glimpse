@@ -34,6 +34,7 @@ yarn-error.log*
 .env*
 .env.hardhat
 !.env.hardhat.template
+!.env.template
 
 # vercel
 .vercel
