@@ -26,7 +26,7 @@ export const ConnectProfile = () => {
               </svg>
             </div>
           </div>
-          <span className={styles.hintText}>to view and share stories</span>
+          <span className={styles.hintText}>to view and share moments</span>
         </div>
       </div>
     </div>
