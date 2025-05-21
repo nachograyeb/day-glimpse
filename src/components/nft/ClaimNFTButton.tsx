@@ -80,23 +80,31 @@ export const ClaimNFTButton = ({
           className={`${styles.claimButton} ${isButtonDisabled ? styles.disabled : ''}`}
           onClick={handleButtonClick}
           onMouseEnter={() => {
-            console.log("onMouseEnter");
-            if (isButtonDisabled) {
-              setShowTooltip(true);
-            }
+            setShowTooltip(true);
           }}
           onMouseLeave={() => {
-            console.log("onMouseLeave");
             setShowTooltip(false);
           }}
+          aria-label="Claim as NFT"
         >
-          <span className={styles.buttonIcon}>🖼️</span>
-          {checkingFollowStatus ? 'Checking...' : 'Claim as NFT'}
+          <span className={styles.buttonIcon}>
+            {checkingFollowStatus ? (
+              <div className={styles.miniLoader}></div>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="8" width="16" height="13" rx="1" stroke="white" strokeWidth="2" />
+                <path d="M4 5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V8H4V5Z" stroke="white" strokeWidth="2" />
+                <path d="M12 15L9 12L12 9L15 12L12 15Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
         </button>
 
-        {showTooltip && isButtonDisabled && (
+        {showTooltip && (
           <div className={styles.tooltip}>
-            Follow you, follow me: in order to claim my NFT, we need to be mutual followers.
+            {checkingFollowStatus ?
+              'Checking follow status...' :
+              isButtonDisabled ? 'To claim as NFT, you need to be mutual followers' : 'Claim this Day Glimpse as NFT'}
           </div>
         )}
       </div>

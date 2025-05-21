@@ -66,16 +66,17 @@ export const ProfilePage = () => {
   if (!pageReady) {
     return (
       <div className={styles.container}>
-        <DayGlimpseLogo
-          size="large"
-          animated={true}
-          showSubtitle={true}
-          fixedPosition={true}
-        />
-
-        <div className={styles.loadingContainer}>
+        <div className={styles.loadingScreen}>
+          <div className={styles.logoContainer}>
+            <DayGlimpseLogo
+              size="large"
+              animated={true}
+              showSubtitle={true}
+              fixedPosition={true}
+            />
+          </div>
           <div className={styles.loadingSpinner}></div>
-          <p>Loading Day Glimpse...</p>
+          {/* <p>Loading Day Glimpse...</p> */}
         </div>
       </div>
     );
@@ -83,12 +84,29 @@ export const ProfilePage = () => {
 
   return (
     <div className={styles.container}>
-      <DayGlimpseLogo
-        size="large"
-        animated={true}
-        showSubtitle={true}
-        fixedPosition={true}
-      />
+      {/* Logo overlay when image is shown */}
+      {image && imageLoaded && (
+        <div className={styles.logoOverlay}>
+          <DayGlimpseLogo
+            size="small"
+            animated={false}
+            showSubtitle={false}
+            fixedPosition={false}
+          />
+        </div>
+      )}
+
+      {/* Show large logo only when no image is displayed */}
+      {(!image || !imageLoaded) && (
+        <div className={styles.logoHeader}>
+          <DayGlimpseLogo
+            size="large"
+            animated={true}
+            showSubtitle={true}
+            fixedPosition={false}
+          />
+        </div>
+      )}
 
       <div className={styles.imageContainer}>
         <ImageUploader
@@ -103,13 +121,15 @@ export const ProfilePage = () => {
           onImageLoad={handleImageLoadChange}
         />
 
-        {/* ClaimNFTButton will handle the mutual followers check internally */}
+        {/* ClaimNFTButton positioned in the corner */}
         {!isOwner && image && profileAddress && (
-          <ClaimNFTButton
-            imageUrl={image}
-            profileAddress={profileAddress}
-            imageLoaded={imageLoaded}
-          />
+          <div className={styles.claimButtonWrapper}>
+            <ClaimNFTButton
+              imageUrl={image}
+              profileAddress={profileAddress}
+              imageLoaded={imageLoaded}
+            />
+          </div>
         )}
       </div>
     </div>

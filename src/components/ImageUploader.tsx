@@ -133,7 +133,7 @@ export const ImageUploader = ({
       {isLoading ? (
         <div className={styles.loadingContainer}>
           <div className={styles.loadingSpinner}></div>
-          <p>Processing image...</p>
+          {/* <p>Processing image...</p> */}
         </div>
       ) : image ? (
         <div className={styles.imageViewer}>
@@ -143,19 +143,19 @@ export const ImageUploader = ({
             className={styles.image}
             onLoad={handleImageLoad}
           />
+          {imageLoaded && isPrivate && (
+            <div className={styles.privacyTag}>
+              <span className={styles.privacyIcon}>🔒</span>
+            </div>
+          )}
           {isOwner && imageLoaded && (
             <button
               onClick={handleDeleteClick}
               className={styles.deleteButton}
               aria-label="Delete image"
             >
-              <span className={styles.deleteIcon}>🗑️</span> Delete Image
+              <span className={styles.deleteIcon}>🗑️</span>
             </button>
-          )}
-          {imageLoaded && isPrivate && (
-            <div className={styles.privacyTag}>
-              <span className={styles.privacyIcon}>🔒</span> Exclusive
-            </div>
           )}
         </div>
       ) : (
@@ -165,11 +165,11 @@ export const ImageUploader = ({
             onClick={handleUploadClick}
             style={{ cursor: isOwner ? 'pointer' : 'default' }}
           >
-            <div className={styles.uploadIcon}>📤</div>
+            <div className={styles.uploadIcon}>+</div>
             <div className={styles.uploadText}>
               {isOwner
-                ? 'Click to upload an image'
-                : 'No image has been uploaded by the profile owner'}
+                ? 'Share a moment'
+                : 'No story shared yet'}
             </div>
           </div>
           <input

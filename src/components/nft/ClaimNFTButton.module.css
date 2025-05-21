@@ -1,84 +1,135 @@
 .buttonContainer {
   position: relative;
-  margin-top: 1rem;
-  width: fit-content;
+  z-index: 50;
 }
 
 .claimButton {
-  background: linear-gradient(to right, #3333ff, #00ccff);
-  color: white;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(63, 81, 181, 0.8);
+  backdrop-filter: blur(8px);
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 50px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: white;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3);
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-.claimButton:hover:not(.disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 204, 255, 0.4);
+.claimButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+  z-index: 0;
 }
 
-.claimButton:active:not(.disabled) {
-  transform: translateY(-1px);
+.claimButton:hover::before {
+  opacity: 1;
+}
+
+.claimButton.disabled {
+  background: rgba(50, 50, 50, 0.6);
+  cursor: not-allowed;
+}
+
+.claimButton.disabled::before {
+  opacity: 0;
 }
 
 .buttonIcon {
-  font-size: 1.25rem;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Disabled state styling */
-.disabled {
-  background: linear-gradient(to right, #666, #999);
-  cursor: not-allowed;
-  box-shadow: none;
-  opacity: 0.8;
+.buttonIcon svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2px;
+  fill: none;
+  stroke: white;
 }
 
-.disabled:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-/* Tooltip styling - updated to appear above button */
+/* Modern Instagram-style tooltip */
 .tooltip {
   position: absolute;
-  top: -60px; /* Position above the button */
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(30, 30, 46, 0.95);
+  bottom: 70px;
+  right: -20px;
+  transform: translateX(0);
+  background-color: rgba(0, 0, 0, 0.9);
   color: white;
-  padding: 0.6rem 0.8rem; /* Slightly smaller padding */
+  padding: 0.8rem 1rem;
   border-radius: 8px;
-  font-size: 0.8rem; /* Smaller font size */
-  width: 220px; /* Smaller width */
-  text-align: center;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  animation: fadeIn 0.3s ease;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
   pointer-events: none;
-  opacity: 1;
-  max-width: 90vw; /* Ensure it doesn't overflow on very small screens */
+  min-width: 200px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tooltip::after {
   content: '';
   position: absolute;
-  bottom: -10px; /* Changed from top to bottom */
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 10px 10px 0; /* Change direction of triangle */
-  border-style: solid;
-  border-color: rgba(30, 30, 46, 0.95) transparent transparent; /* Changed direction */
+  bottom: -8px;
+  right: 30px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(0, 0, 0, 0.9);
+}
+
+.miniLoader {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, 10px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(20%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(20%);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .tooltip {
+    right: -50px;
+    transform: translateX(0);
+  }
+  
+  .tooltip::after {
+    right: 55px;
+  }
 }
