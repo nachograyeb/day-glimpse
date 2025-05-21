@@ -33,13 +33,13 @@ const PrivacyModal = ({
 
         <div className={styles.optionsContainer}>
           <div className={styles.optionCard} onClick={handlePublicSelect}>
-            <div className={styles.optionIcon}>🌐</div>
+            <div className={styles.publicIcon}></div>
             <h4 className={styles.optionTitle}>Public</h4>
             <p className={styles.optionDescription}>Anyone can view your Day Glimpse</p>
           </div>
 
           <div className={styles.optionCard} onClick={handleExclusiveSelect}>
-            <div className={styles.optionIcon}>🔒</div>
+            <div className={styles.exclusiveIcon}></div>
             <h4 className={styles.optionTitle}>Exclusive</h4>
             <p className={styles.optionDescription}>Only users that hold at least one of your previous Day Glimpse NFTs can view it</p>
           </div>
