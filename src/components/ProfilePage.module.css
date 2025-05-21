@@ -20,7 +20,6 @@
   z-index: 5;
 }
 
-/* Logo overlay for when image is displayed */
 .logoOverlay {
   position: absolute;
   top: 0px;
@@ -48,6 +47,13 @@
 .claimButtonWrapper {
   position: absolute;
   bottom: 16px;
+  right: 16px;
+  z-index: 20;
+}
+
+.reactionsButtonWrapper {
+  position: absolute;
+  bottom: 84px;
   right: 16px;
   z-index: 20;
 }

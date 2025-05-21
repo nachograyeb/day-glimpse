@@ -5,6 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useProfileImage } from '@/hooks/useProfileImage';
 import { ImageUploader } from './ImageUploader';
 import { ClaimNFTButton } from './nft/ClaimNFTButton';
+import { ReactionsTeaser } from './ReactionsTeaser';
 import DayGlimpseLogo from './DayGlimpseLogo';
 import styles from './ProfilePage.module.css';
 
@@ -121,15 +122,19 @@ export const ProfilePage = () => {
           onImageLoad={handleImageLoadChange}
         />
 
-        {/* ClaimNFTButton positioned in the corner */}
         {!isOwner && image && profileAddress && (
-          <div className={styles.claimButtonWrapper}>
-            <ClaimNFTButton
-              imageUrl={image}
-              profileAddress={profileAddress}
-              imageLoaded={imageLoaded}
-            />
-          </div>
+          <>
+            <div className={styles.reactionsButtonWrapper}>
+              <ReactionsTeaser imageLoaded={imageLoaded} />
+            </div>
+            <div className={styles.claimButtonWrapper}>
+              <ClaimNFTButton
+                imageUrl={image}
+                profileAddress={profileAddress}
+                imageLoaded={imageLoaded}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>

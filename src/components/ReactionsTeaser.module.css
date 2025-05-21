@@ -1,0 +1,139 @@
+.buttonContainer {
+  position: relative;
+  z-index: 50;
+}
+
+.reactionsButton {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(63, 81, 181, 0.8);
+  backdrop-filter: blur(8px);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.reactionsButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e1306c, #833ab4);
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.reactionsButton:hover::before {
+  opacity: 0.8;
+}
+
+.reactionsButton.disabled {
+  background: rgba(50, 50, 50, 0.6);
+  cursor: not-allowed;
+}
+
+.reactionsButton.disabled::before {
+  background: linear-gradient(135deg, #e1306c, #833ab4);
+  opacity: 0.3;
+}
+
+.reactionsButton.disabled:hover::before {
+  opacity: 0.4;
+}
+
+.buttonIcon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: heartBeat 3s ease-in-out infinite;
+}
+
+.buttonIcon svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2px;
+  fill: none;
+  stroke: white;
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.1);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 70px;
+  right: -20px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  pointer-events: none;
+  min-width: 200px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  right: 30px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 150px) {
+  .tooltip {
+    right: -100px;
+    transform: translateX(0);
+  }
+}
