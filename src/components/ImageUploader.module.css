@@ -52,16 +52,15 @@
 
 .uploadIcon::after {
   content: '+';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  top: 0%;
+  left: 0%;
   line-height: 1;
   font-size: 3.5rem;
 }
 
 .uploadText {
-  font-size: 1.2rem;
+  font-size: 1rem;
   text-align: center;
   padding: 0 1rem;
   font-weight: 500;

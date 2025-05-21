@@ -165,11 +165,11 @@ export const ImageUploader = ({
             onClick={handleUploadClick}
             style={{ cursor: isOwner ? 'pointer' : 'default' }}
           >
-            <div className={styles.uploadIcon}>+</div>
+            <div className={styles.uploadIcon}></div>
             <div className={styles.uploadText}>
               {isOwner
-                ? 'Share a moment'
-                : 'No story shared yet'}
+                ? 'Share a new Day Glimpse'
+                : 'No Day Glimpse shared yet'}
             </div>
           </div>
           <input
