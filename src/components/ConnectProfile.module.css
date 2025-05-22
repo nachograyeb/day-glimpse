@@ -1,152 +1,98 @@
-.wrapper {
-  width: 100vw;
+.container {
+  width: 100%;
   height: 100vh;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.connectedState {
-  padding: 1rem;
-}
-
-.connectedState h2 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.connectedState p {
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-}
-
-.waitingState {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(45deg, #581c87, #701a75, #831843, #701a75, #581c87);
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-size: 400% 400%;
-  animation: gradientAnimation 15s ease infinite;
-}
-
-@keyframes gradientAnimation {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animatedBackground {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  background-color: #121212;
+  color: white;
   overflow: hidden;
 }
 
 .content {
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  padding: 2rem;
-}
-
-.content h1 {
-  font-size: 3rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 1rem;
-  line-height: 1.2;
-}
-
-.gradientText {
-  background: linear-gradient(to right, #c084fc, #f472b6, #d946ef);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.gradientTextReverse {
-  background: linear-gradient(to right, #d946ef, #f472b6, #c084fc);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.divider {
-  width: 4rem;
-  height: 0.25rem;
-  background: linear-gradient(to right, #c084fc, #f472b6, #d946ef);
-  margin: 1.5rem auto 0;
-  border-radius: 0.25rem;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* Loading container styles - simple, matching ImageUploader */
-.loadingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 80%;
-  max-width: 600px;
-  height: 300px;
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.05);
-  margin: 2rem 0;
-  position: relative;
-  z-index: 10;
-}
-
-.loadingSpinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  border-top: 4px solid white;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1.5rem;
-}
-
-.loadingContainer p {
-  font-size: 1.2rem;
-  margin: 0;
-  opacity: 0.9;
-  color: white;
   text-align: center;
+  padding: 2rem;
+  max-width: 90%;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.logoWrapper {
+  margin-bottom: 3rem;
+}
+
+.connectMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.connectText {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  background: linear-gradient(to right, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.connectIconContainer {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.connectIcon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c);
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 25px rgba(225, 48, 108, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.connectIcon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.hintText {
+  font-size: 1rem;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+  0% {
+    box-shadow: 0 0 0 0 rgba(225, 48, 108, 0.4);
   }
-  50% {
-    opacity: 0.5;
+  70% {
+    box-shadow: 0 0 0 15px rgba(225, 48, 108, 0);
   }
-}
-
-@media (max-width: 768px) {
-  .content h1 {
-    font-size: 2rem;
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 48, 108, 0);
   }
 }

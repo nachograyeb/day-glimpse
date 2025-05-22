@@ -3,15 +3,17 @@
 import { useRef, useState, useEffect } from 'react';
 import styles from './ImageUploader.module.css';
 
+interface PrivacyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (isPrivate: boolean) => void;
+}
+
 const PrivacyModal = ({
   isOpen,
   onClose,
   onSelect
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (isPrivate: boolean) => void;
-}) => {
+}: PrivacyModalProps) => {
   if (!isOpen) return null;
 
   const handlePublicSelect = () => {
@@ -31,15 +33,15 @@ const PrivacyModal = ({
 
         <div className={styles.optionsContainer}>
           <div className={styles.optionCard} onClick={handlePublicSelect}>
-            <div className={styles.optionIcon}>🌐</div>
+            <div className={styles.publicIcon}></div>
             <h4 className={styles.optionTitle}>Public</h4>
-            <p className={styles.optionDescription}>Anyone can view your DayGlimpse</p>
+            <p className={styles.optionDescription}>Anyone can view your Day Glimpse</p>
           </div>
 
           <div className={styles.optionCard} onClick={handleExclusiveSelect}>
-            <div className={styles.optionIcon}>🔒</div>
+            <div className={styles.exclusiveIcon}></div>
             <h4 className={styles.optionTitle}>Exclusive</h4>
-            <p className={styles.optionDescription}>Only users that hold at least one of your previous DayGlimpse NFTs can view it</p>
+            <p className={styles.optionDescription}>Only users that hold at least one of your previous Day Glimpse NFTs can view it</p>
           </div>
         </div>
 
@@ -65,6 +67,7 @@ interface ImageUploaderProps {
 
 export const ImageUploader = ({
   isOwner,
+  profileAddress,
   image,
   error,
   isLoading,
@@ -133,43 +136,49 @@ export const ImageUploader = ({
       {isLoading ? (
         <div className={styles.loadingContainer}>
           <div className={styles.loadingSpinner}></div>
-          <p>Processing image...</p>
+          {/* <p>Creating your Day Glimpse...</p> */}
         </div>
       ) : image ? (
         <div className={styles.imageViewer}>
           <img
             src={image}
-            alt="Profile content"
+            alt="Day Glimpse"
             className={styles.image}
             onLoad={handleImageLoad}
           />
+          {imageLoaded && isPrivate && (
+            <div className={styles.privacyTag}>
+              <span className={styles.privacyIcon}></span>
+              <span>Exclusive</span>
+            </div>
+          )}
           {isOwner && imageLoaded && (
             <button
               onClick={handleDeleteClick}
               className={styles.deleteButton}
               aria-label="Delete image"
             >
-              <span className={styles.deleteIcon}>🗑️</span> Delete Image
+              <span className={styles.deleteIcon}></span>
             </button>
-          )}
-          {imageLoaded && isPrivate && (
-            <div className={styles.privacyTag}>
-              <span className={styles.privacyIcon}>🔒</span> Exclusive
-            </div>
           )}
         </div>
       ) : (
         <>
           <div
-            className={styles.uploadArea}
+            className={`${styles.uploadArea} ${!isOwner ? styles.viewerMode : ''}`}
             onClick={handleUploadClick}
             style={{ cursor: isOwner ? 'pointer' : 'default' }}
           >
-            <div className={styles.uploadIcon}>📤</div>
+            <div className={isOwner ? styles.uploadIcon : styles.emptyIcon}></div>
             <div className={styles.uploadText}>
-              {isOwner
-                ? 'Click to upload an image'
-                : 'No image has been uploaded by the profile owner'}
+              <h3 className={styles.uploadTitle}>
+                {isOwner ? 'Share your day' : 'No Day Glimpse yet'}
+              </h3>
+              <p className={styles.uploadSubtitle}>
+                {isOwner
+                  ? 'Share an image that represents a moment from your day'
+                  : 'This user hasn\'t shared a Day Glimpse yet'}
+              </p>
             </div>
           </div>
           <input
