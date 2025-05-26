@@ -20,9 +20,9 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
     },
-    luksoTestnet: {
+    lukso: {
       url: process.env.LUKSO_RPC_URL || "",
-      chainId: 4201,
+      chainId: Number(process.env.LUKSO_CHAIN_ID) || 4201,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   },
