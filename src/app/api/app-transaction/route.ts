@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { NextRequest, NextResponse } from 'next/server';
 
 const APP_WALLET_PRIVATE_KEY = process.env.APP_WALLET_PRIVATE_KEY;
-const LUKSO_RPC_URL = process.env.LUKSO_RPC_URL || 'https://rpc.testnet.lukso.network';
+const LUKSO_RPC_URL = process.env.NEXT_PUBLIC_LUKSO_RPC_URL || 'https://rpc.testnet.lukso.network';
 
 // Rate limiting to prevent abuse
 const RATE_LIMIT = {

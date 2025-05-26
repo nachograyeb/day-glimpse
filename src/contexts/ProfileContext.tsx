@@ -69,7 +69,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setProvider(_provider);
       setBrowserProvider(_browserProvider);
 
-      const _directProvider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+      const _directProvider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_LUKSO_RPC_URL || 'https://rpc.testnet.lukso.network');
       setDirectProvider(_directProvider);
 
       const parentProfileAddress = localStorage.getItem('parentProfileAddress');
