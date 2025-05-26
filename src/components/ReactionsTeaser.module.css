@@ -3,7 +3,7 @@
   z-index: 50;
 }
 
-.claimButton {
+.reactionsButton {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -14,14 +14,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: not-allowed;
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
 }
 
-.claimButton::before {
+.reactionsButton::before {
   content: '';
   position: absolute;
   top: 0;
@@ -29,23 +29,28 @@
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
-  opacity: 0.8;
+  background: linear-gradient(135deg, #e1306c, #833ab4);
+  opacity: 0.6;
   transition: opacity 0.3s ease;
   z-index: 0;
 }
 
-.claimButton:hover::before {
-  opacity: 1;
+.reactionsButton:hover::before {
+  opacity: 0.8;
 }
 
-.claimButton.disabled {
+.reactionsButton.disabled {
   background: rgba(50, 50, 50, 0.6);
   cursor: not-allowed;
 }
 
-.claimButton.disabled::before {
-  opacity: 0;
+.reactionsButton.disabled::before {
+  background: linear-gradient(135deg, #e1306c, #833ab4);
+  opacity: 0.3;
+}
+
+.reactionsButton.disabled:hover::before {
+  opacity: 0.4;
 }
 
 .buttonIcon {
@@ -54,6 +59,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: heartBeat 3s ease-in-out infinite;
 }
 
 .buttonIcon svg {
@@ -62,6 +68,24 @@
   stroke-width: 2px;
   fill: none;
   stroke: white;
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.1);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(1);
+  }
 }
 
 .tooltip {
@@ -81,6 +105,18 @@
   min-width: 200px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tooltip::after {
@@ -93,20 +129,6 @@
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 8px solid rgba(0, 0, 0, 0.9);
-}
-
-.miniLoader {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 150px) {

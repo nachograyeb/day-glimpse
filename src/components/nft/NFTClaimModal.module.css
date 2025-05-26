@@ -4,55 +4,74 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modalContent {
-  background: linear-gradient(to bottom right, #2e1065, #4c1d95);
+  background-color: #262626;
   border-radius: 16px;
   width: 90%;
-  max-width: 500px;
+  max-width: 450px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  padding: 2rem;
   color: white;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .closeButton {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: none;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
   border: none;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
   z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
 .closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
   color: white;
+  transform: scale(1.1);
 }
 
 .modalTitle {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   text-align: center;
   margin-bottom: 1.5rem;
-  background: linear-gradient(to right, #c084fc, #f472b6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: bold;
+  font-weight: 600;
+  color: white;
+  line-height: 1.3;
 }
 
-/* Initial Stage */
 .initialStage {
   display: flex;
   flex-direction: column;
@@ -62,11 +81,23 @@
 .imagePreview {
   width: 200px;
   height: 200px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 1.5rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.imagePreview::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 49%, rgba(225, 48, 108, 0.1) 50%, transparent 51%);
+  pointer-events: none;
 }
 
 .imagePreview img {
@@ -80,32 +111,37 @@
   margin-bottom: 2rem;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
+  max-width: 320px;
+  font-size: 0.95rem;
 }
 
 .mintButton {
-  background: linear-gradient(to right, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #e1306c, #833ab4);
   color: white;
   border: none;
-  padding: 12px 30px;
+  padding: 14px 32px;
   border-radius: 50px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(225, 48, 108, 0.3);
+  min-width: 150px;
 }
 
 .mintButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(225, 48, 108, 0.4);
+  background: linear-gradient(135deg, #e1306c, #921ab8);
 }
 
-/* Minting Stage */
 .mintingStage {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 300px;
+  padding: 2rem 0;
 }
 
 .loaderContainer {
@@ -113,12 +149,13 @@
 }
 
 .loader {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  width: 60px;
+  height: 60px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  border-top: 4px solid #f472b6;
-  animation: spin 1s linear infinite;
+  border-top: 3px solid #e1306c;
+  border-right: 3px solid #e1306c;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -129,9 +166,11 @@
 .mintingDescription {
   text-align: center;
   color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  max-width: 280px;
+  line-height: 1.5;
 }
 
-/* Success Stage */
 .successStage {
   display: flex;
   flex-direction: column;
@@ -140,18 +179,31 @@
 
 .nftContainer {
   position: relative;
-  margin: 1rem 0 2rem;
+  margin: 1.5rem 0 2rem;
 }
 
 .nftFrame {
   width: 220px;
   height: 220px;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #000;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  border: 3px solid gold;
+  background: #1a1a1a;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #e1306c, #833ab4) 1;
   position: relative;
+}
+
+.nftFrame::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(135deg, #e1306c, #833ab4);
+  border-radius: 16px;
+  z-index: -1;
 }
 
 .nftFrame img {
@@ -162,64 +214,67 @@
 
 .confetti {
   position: absolute;
-  top: -20px;
-  left: -20px;
-  right: -20px;
-  bottom: -20px;
+  top: -30px;
+  left: -30px;
+  right: -30px;
+  bottom: -30px;
   background-image: 
-    radial-gradient(circle, #f472b6 2px, transparent 2px),
-    radial-gradient(circle, #8b5cf6 2px, transparent 2px),
-    radial-gradient(circle, gold 2px, transparent 2px);
-  background-size: 30px 30px;
-  animation: confettiDrop 3s linear infinite;
-  opacity: 0.7;
+    radial-gradient(circle, #e1306c 2px, transparent 2px),
+    radial-gradient(circle, #833ab4 2px, transparent 2px),
+    radial-gradient(circle, #ffd700 2px, transparent 2px);
+  background-size: 25px 25px, 35px 35px, 20px 20px;
+  animation: confettiDrop 4s linear infinite;
+  opacity: 0.6;
   pointer-events: none;
+  border-radius: 50px;
 }
 
 @keyframes confettiDrop {
-  0% { background-position: 0 -100px, 15px -50px, 30px -20px; }
-  100% { background-position: 0 100px, 15px 150px, 30px 200px; }
+  0% { 
+    background-position: 0 -80px, 10px -60px, 20px -40px;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% { 
+    background-position: 0 120px, 10px 140px, 20px 160px;
+    opacity: 0.3;
+  }
 }
 
 .nftDetails {
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
   margin-bottom: 1.5rem;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .detailRow {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  align-items: center;
+  margin-bottom: 0.75rem;
   font-size: 0.9rem;
+}
+
+.detailRow:last-child {
+  margin-bottom: 0;
 }
 
 .detailLabel {
   color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 .detailValue {
   font-weight: 600;
   color: white;
-}
-
-.viewNftButton {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 10px 25px;
-  border-radius: 50px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-  max-width: 200px;
-}
-
-.viewNftButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.85rem;
 }
 
 .closeSuccessButton {
@@ -228,6 +283,9 @@
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   margin-top: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
 }
 
 .closeSuccessButton:hover {
@@ -235,7 +293,6 @@
   text-decoration: underline;
 }
 
-/* Error Stage */
 .errorStage {
   display: flex;
   flex-direction: column;
@@ -245,60 +302,123 @@
 }
 
 .errorIcon {
-  font-size: 3rem;
-  margin: 1rem 0;
+  width: 60px;
+  height: 60px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0 1.5rem;
   animation: shake 0.5s ease-in-out;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.errorIcon::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ef4444' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 18L18 6M6 6l12 12'%3E%3C/path%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-10px); }
-  40%, 80% { transform: translateX(10px); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
 }
 
 .errorMessage {
   font-weight: 600;
-  color: #f87171;
-  margin-bottom: 0.5rem;
+  color: #ef4444;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
 }
 
 .errorDescription {
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 2rem;
+  max-width: 300px;
+  line-height: 1.5;
+  font-size: 0.9rem;
 }
 
 .errorButtons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .tryAgainButton {
-  background: linear-gradient(to right, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, #e1306c, #833ab4);
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 50px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(225, 48, 108, 0.3);
+}
+
+.tryAgainButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(225, 48, 108, 0.4);
 }
 
 .closeErrorButton {
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 50px;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
-/* Media Queries */
+.closeErrorButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 480px) {
+  .modalContent {
+    padding: 1.5rem;
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+  
   .modalTitle {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+    margin-bottom: 1.25rem;
   }
   
   .imagePreview, .nftFrame {
     width: 180px;
     height: 180px;
+  }
+  
+  .description, .mintingDescription, .errorDescription {
+    font-size: 0.9rem;
+  }
+  
+  .mintButton {
+    padding: 12px 28px;
+    font-size: 0.95rem;
+  }
+  
+  .errorButtons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .tryAgainButton, .closeErrorButton {
+    width: 100%;
+    max-width: 200px;
   }
 }

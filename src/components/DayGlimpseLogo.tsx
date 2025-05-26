@@ -61,7 +61,7 @@ const DayGlimpseLogo = ({
           align-items: center;
           justify-content: center;
           width: 100%;
-          padding: 1rem 0;
+          padding: 0.75rem 0;
         }
         
         .fixed-logo-container {
